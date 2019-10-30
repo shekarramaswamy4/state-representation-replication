@@ -1,6 +1,8 @@
 # imports
 import argparse
 
+from probe.probe_handler import ProbeHandler
+
 '''
 run pipeline.py to run the experiment end to end:
 collect data
@@ -13,6 +15,7 @@ def full_pipeline(args):
 	# get training, validation, testing data
 	# train encoder
 	# train probe 
+	probe_handler = ProbeHandler(3) # update number of state variables based on environment
 
 def parser():
 	parser = argparse.ArgumentParser()
