@@ -3,6 +3,8 @@ import torchvision
 import torchvision.transforms as transforms
 from rand_cnn.net import Net
 
+print("NOTE: Does not work with current version of random CNN")
+
 # load train and test dataset
 transform = transforms.Compose(
     [transforms.ToTensor(),
