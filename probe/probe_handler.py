@@ -1,4 +1,5 @@
 import torch 
+from torch import nn
 
 from probe import Probe
 
@@ -9,6 +10,8 @@ class ProbeHandler():
 
 		self.probes = []
 		self.optimizers = []
+
+		self.loss = nn.CrossEntropyLoss()
 	
 	def setup_probes(self):
 		if self.is_supervised:
@@ -22,21 +25,44 @@ class ProbeHandler():
 		
 		# TODO: add LR schedulers w warmup and cycles
 	
-	def train_one_epoch(self, train_episodes, train_labels):
-		# TODO: randomize input
+	def train_epoch(self, train_episodes, train_labels):
+		# TODO: randomize input, outer loop should iterate through some subset of episodes/labels
 		# for each example, loop through the encoders and compute loss
+		epoch_loss_per_state_variable = np.zeros(self.num_state_variables)
+
 		for j in range(self.num_state_variables):
 			cur_probe = self.probes[j]
 			cur_optim = self.optimizers[j]
 			cur_optim.zero_grad()
 
-			# get label relevant to current probe
+			gt_label = ''
+			pred_label = cur_probe.forward(datapoint) # TODO
 
-			# make predictions
-			# get loss
+			loss = self.loss(gt_label, pred_label)
 
-			# loss.backward()
-			# cur_optim.step()
+			epoch_loss_per_state_variable[k] += loss
+
+			loss.backward()
+			cur_optim.step()
+		
+		# log epoch loss for each state variable
+
+	# used to determine validation and testing loss / accuracy
+	def test_probes(episodes, labels):
+		epoch_loss_per_state_variable = np.zeros(self.num_state_variables)
+
+		for j in range(self.num_state_variables):
+			cur_probe = self.probes[j]
+
+			gt_label = ''
+			pred_label = cur_probe.forward(datapoint) # TODO
+
+			loss = self.loss(gt_label, pred_label)
+
+			epoch_loss_per_state_variable[k] += loss
+
+		# log test loss for each state variable	
+
 
 	def train(self, train_episodes, train_labels, \
 						val_episodes, val_labels, \ 
@@ -46,5 +72,7 @@ class ProbeHandler():
 
 		for i in range(epochs):
 			print('Epoch: ' + str(i) + ' of ' + str(epochs))
-			# 
+			self.train_epoch(train_episodes, train_labels)
+		
+		print('Finished training probes.')
         
