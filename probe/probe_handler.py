@@ -1,21 +1,25 @@
 import torch 
 from torch import nn
 
-from probe import Probe
+from probe import Probe, FSProbe
 
 class ProbeHandler():
-	def __init__(self, num_state_variables, is_supervised = False):
+	def __init__(self, num_state_variables, encoder = None, is_supervised = False):
 		self.num_state_variables = num_state_variables
 		self.is_supervised = is_supervised
+		self.encoder = encoder
 
 		self.probes = []
 		self.optimizers = []
 
 		self.loss = nn.CrossEntropyLoss()
+
+		self.setup_probes()
 	
 	def setup_probes(self):
 		if self.is_supervised:
-			print('TODO: Implement fully supervised probe')
+			for i in range(self.num_state_variables):
+				self.probes.append(FSProbe())
 		else:
 			for i in range(self.num_state_variables):
 				self.probes.append(Probe())
@@ -27,7 +31,6 @@ class ProbeHandler():
 	
 	def train_epoch(self, train_episodes, train_labels):
 		# TODO: randomize input, outer loop should iterate through some subset of episodes/labels
-		# for each example, loop through the encoders and compute loss
 		epoch_loss_per_state_variable = np.zeros(self.num_state_variables)
 
 		for j in range(self.num_state_variables):

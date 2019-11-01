@@ -14,14 +14,20 @@ def full_pipeline(args):
 	print('running full pipeline')
 	# get training, validation, testing data
 	# train encoder
-	# train probe 
-	probe_handler = ProbeHandler(3) # update number of state variables based on environment
+
+	# probe handler needs to know how many state variables we are using
+	# if fully supervised, need an encoder as well.
+	probe_handler = ProbeHandler(3, encoder=None, is_supervised=args.supervised)
+	# probe_handler.train(DATA)
+
+	# evaluate frozen encoder + trained probes
 
 def parser():
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--game', default='Pong-v0', 
 		help='atari game to use')
-
+	parser.add_argument('--supervised', default=False,
+		help='flag for fully supervised learning')
 
 if __name__ == "__main__":
 	parser = ()
