@@ -20,12 +20,13 @@ class ProbeHandler():
 		if self.is_supervised:
 			for i in range(self.num_state_variables):
 				self.probes.append(FSProbe())
+				self.optimizers.append(torch.optim.Adam(list(self.probes[k].parameters()), lr=3e-4))
 		else:
 			for i in range(self.num_state_variables):
 				self.probes.append(Probe())
+				self.optimizers.append(torch.optim.Adam(list(self.probes[k].parameters()), lr=5e-2))
 		
 		for i in range(self.num_state_variables):
-			self.optimizers.append(torch.optim.Adam(list(self.probes[k].parameters()), lr=3e-4)) # Karpathy's constant
 		
 		# TODO: add LR schedulers w warmup and cycles
 	
