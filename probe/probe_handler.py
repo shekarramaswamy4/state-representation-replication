@@ -32,27 +32,6 @@ class ProbeHandler():
 		
 		# TODO: add LR schedulers w warmup and cycles
 	
-	def train_epoch(self, train_episodes, train_labels):
-		# TODO: randomize input, outer loop should iterate through some subset of episodes/labels
-		epoch_loss_per_state_variable = np.zeros(self.num_state_variables)
-
-		for j in range(self.num_state_variables):
-			cur_probe = self.probes[j]
-			cur_optim = self.optimizers[j]
-			cur_optim.zero_grad()
-
-			gt_label = ''
-			pred_label = cur_probe.forward(datapoint) # TODO
-
-			loss = self.loss(gt_label, pred_label)
-
-			epoch_loss_per_state_variable[k] += loss
-
-			loss.backward()
-			cur_optim.step()
-		
-		# log epoch loss for each state variable
-	
 	def randomly_sample_for_batch(self, episodes, labels, batch_size):
 		episode_lengths = []
 		for ep in episodes:
@@ -89,22 +68,52 @@ class ProbeHandler():
 		print('ERROR: determine_index_of_example / probe_handler.py: Invalid index')
 		return (0, 0)
 
-	# used to determine validation and testing loss / accuracy
-	def test_probes(self, episodes, labels):
+	# train for one epoch
+	def train_epoch(self, train_episodes, train_labels, batch_size):
+
+		tr_episodes_batched, tr_labels_batched = self.randomly_sample_for_batch(train_episodes, train_labels, batch_size)
 		epoch_loss_per_state_variable = np.zeros(self.num_state_variables)
 
-		for j in range(self.num_state_variables):
-			cur_probe = self.probes[j]
+		for ep in range(len(tr_episodes_batched)): # training for each batch
+			gt_labels = tr_labels_batched[ep]	
+			cur_episodes = test_episodes_batched[ep]
+			for j in range(self.num_state_variables): # per state variable
 
-			gt_label = ''
-			pred_label = cur_probe.forward(datapoint) # TODO
+				cur_probe = self.probes[j]
+				cur_optim = self.optimizers[j]
+				cur_optim.zero_grad()
 
-			loss = self.loss(gt_label, pred_label)
+				pred_labels = cur_probe.forward(cur_episodes)
 
-			epoch_loss_per_state_variable[k] += loss
+				loss = self.loss(gt_labels, pred_labels)
 
-		# log test loss for each state variable	
+				epoch_loss_per_state_variable[k] += loss
 
+				loss.backward()
+				cur_optim.step()
+		
+		return epoch_loss_per_state_variable
+
+	# used to determine validation and testing loss / accuracy
+	def test_probes(self, test_episodes, test_labels, batch_size):
+
+		test_episodes_batched, test_labels_batched = self.randomly_sample_for_batch(test_episodes, test_labels, batch_size)
+		epoch_loss_per_state_variable = np.zeros(self.num_state_variables)
+
+		for ep in range(len(test_episodes_batched)):
+			gt_labels = tr_labels_batched[ep]	
+			cur_episodes = test_episodes_batched[ep]
+			for j in range(self.num_state_variables):
+				cur_probe = self.probes[j]
+
+				pred_labels = cur_probe.forward(cur_episodes)
+
+				loss = self.loss(gt_labels, pred_labels)
+
+				epoch_loss_per_state_variable[k] += loss
+				# additional metrics
+
+		return epoch_loss_per_state_variable
 
 	def train(self, train_episodes, train_labels, \
 						val_episodes, val_labels, \ 
@@ -114,7 +123,13 @@ class ProbeHandler():
 
 		for i in range(epochs):
 			print('Epoch: ' + str(i) + ' of ' + str(epochs))
-			self.train_epoch(train_episodes, train_labels)
+			metrics = self.train_epoch(train_episodes, train_labels, batch_size)
+			print(metrics)
 		
-		print('Finished training probes.')
+		print('--- Finished training probes. ---')
+		metrics = self.test_probes(val_episodes, val_labels, batch_size)
+		print(metrics)
+
+		metrics = self.test_probes(test_episodes, test_labels, batch_size)
+		print(metrics)
         
