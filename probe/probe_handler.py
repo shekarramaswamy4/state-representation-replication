@@ -4,6 +4,10 @@ from torch import nn
 from probe import Probe, FSProbe
 
 from torch.utils.data import RandomSampler, BatchSampler
+from sklearn.metrics import f1_score
+
+def calc_f1_score_for_labels(gt_labels, pred_labels):
+	return f1_score(gt_labels, pred_labels)
 
 class ProbeHandler():
 	def __init__(self, num_state_variables, encoder = None, is_supervised = False):
@@ -109,6 +113,9 @@ class ProbeHandler():
 				pred_labels = cur_probe.forward(cur_episodes)
 
 				loss = self.loss(gt_labels, pred_labels)
+
+				f1 = calc_f1_score_for_labels(gt_labels, pred_labels)
+				print('F1 score for Probe #' + str(j) + ': ' + str(f1))
 
 				epoch_loss_per_state_variable[k] += loss
 				# additional metrics
