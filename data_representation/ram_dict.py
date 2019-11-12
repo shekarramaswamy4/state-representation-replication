@@ -10,7 +10,25 @@ ram_state_dict = {
                  ball_x=49,
                  ball_y=54,
                  enemy_score=13,
-                 player_score=14)
+                 player_score=14),
+    "seaquest": dict(enemy_obstacle_x=range(30, 34),
+                     player_x=70,
+                     player_y=97,
+                     diver_x=range(71, 75),
+                     player_direction=86,
+                     missile_direction=87,
+                     oxygen_meter_value=102,
+                     missile_x=103,
+                     score=[57, 58],
+                     num_lives=59,
+                     divers_collected_count=62),
+    "spaceinvaders": dict(invaders_left_count=17,
+                          player_score=104,
+                          num_lives=125,
+                          player_x=28,
+                          enemies_x=26,
+                          missiles_y=9,
+                          enemies_y=24)
 }
 
 update_dict = {k: {} for k in atari_dict.keys()}
