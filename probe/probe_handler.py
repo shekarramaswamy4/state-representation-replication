@@ -14,6 +14,7 @@ class ProbeHandler():
 		self.num_state_variables = num_state_variables
 		self.is_supervised = is_supervised
 		self.encoder = encoder
+		assert self.encoder is not None
 
 		self.probes = []
 		self.optimizers = []
@@ -25,7 +26,7 @@ class ProbeHandler():
 	def setup_probes(self):
 		if self.is_supervised:
 			for i in range(self.num_state_variables):
-				self.probes.append(FSProbe())
+				self.probes.append(FSProbe(self.encoder))
 				self.optimizers.append(torch.optim.Adam(list(self.probes[k].parameters()), lr=3e-4))
 		else:
 			for i in range(self.num_state_variables):
@@ -87,7 +88,14 @@ class ProbeHandler():
 				cur_optim = self.optimizers[j]
 				cur_optim.zero_grad()
 
-				pred_labels = cur_probe.forward(cur_episodes)
+				# if fully supervised, FSProbe has the encoder in its init
+				# if not, we use self.encoder for non FS case and make sure to stop gradient
+				if self.is_supervised: 
+					pred_labels = cur_probe.forward(encoder_ouput)
+				else:
+					with torch.no_grad():
+						encoder_ouput = self.encoder(cur_episodes)
+					pred_labels = cur_probe.forward(cur_episodes)
 
 				loss = self.loss(gt_labels, pred_labels)
 
@@ -110,7 +118,13 @@ class ProbeHandler():
 			for j in range(self.num_state_variables):
 				cur_probe = self.probes[j]
 
-				pred_labels = cur_probe.forward(cur_episodes)
+				# if fully supervised, FSProbe has the encoder in its init
+				# if not, we use self.encoder for non FS case. we are testing so no need to stop gradient
+				if self.is_supervised: 
+					pred_labels = cur_probe.forward(encoder_ouput)
+				else:
+					encoder_ouput = self.encoder(cur_episodes)
+					pred_labels = cur_probe.forward(cur_episodes)
 
 				loss = self.loss(gt_labels, pred_labels)
 

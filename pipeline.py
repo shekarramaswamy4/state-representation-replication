@@ -16,7 +16,6 @@ def full_pipeline(args):
 	# train encoder
 
 	# probe handler needs to know how many state variables we are using
-	# if fully supervised, need an encoder as well.
 	probe_handler = ProbeHandler(3, encoder=None, is_supervised=args.supervised)
 	# probe_handler.train(DATA)
 
