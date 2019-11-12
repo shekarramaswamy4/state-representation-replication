@@ -5,11 +5,11 @@ import torchvision
 import torch.nn as nn
 import torch.nn.functional as F
 
-class Net(nn.Module):
+class RandCNN(nn.Module):
     def __init__(self):
-        super(Net, self).__init__()
+        super(RandCNN, self).__init__()
         
-        input_channels = 160*210
+        input_channels = 160*210 
         self.conv1 = nn.Conv2d(input_channels, 32, 8, stride=4)
         self.conv2 = nn.Conv2d(32, 64, 4, stride=2)
         self.conv3 = nn.Conv2d(64, 128, 4, stride=2)

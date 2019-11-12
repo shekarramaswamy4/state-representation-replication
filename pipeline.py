@@ -2,6 +2,7 @@
 import argparse
 
 from probe.probe_handler import ProbeHandler
+from encoders.rand_cnn import RandCNN 
 
 '''
 run pipeline.py to run the experiment end to end:
@@ -13,13 +14,14 @@ run probe and get results
 def full_pipeline(args):
 	print('running full pipeline')
 	# get training, validation, testing data
-	# train encoder
+	# train encoder here if it's one that needs training (ex. dim, not randcnn)
 
+	encoder = RandCNN()
 	# probe handler needs to know how many state variables we are using
-	probe_handler = ProbeHandler(3, encoder=None, is_supervised=args.supervised)
+	probe_handler = ProbeHandler(3, encoder, is_supervised=args.supervised)
 	# probe_handler.train(DATA)
 
-	# evaluate frozen encoder + trained probes
+	# evaluate frozen encoder + trained probes w/ f1 score (setup in probe handler)
 
 def parser():
 	parser = argparse.ArgumentParser()

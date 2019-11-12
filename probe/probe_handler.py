@@ -10,11 +10,11 @@ def calc_f1_score_for_labels(gt_labels, pred_labels):
 	return f1_score(gt_labels, pred_labels)
 
 class ProbeHandler():
-	def __init__(self, num_state_variables, encoder = None, is_supervised = False):
+	def __init__(self, num_state_variables, encoder, is_supervised = False):
 		self.num_state_variables = num_state_variables
-		self.is_supervised = is_supervised
 		self.encoder = encoder
-		assert self.encoder is not None
+		assert self.encoder is not None # sanity
+		self.is_supervised = is_supervised
 
 		self.probes = []
 		self.optimizers = []
