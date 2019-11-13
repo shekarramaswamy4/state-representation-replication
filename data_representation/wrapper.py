@@ -1,5 +1,5 @@
 import gym
-from .ram_dict import ram_state_dict
+from ram_dict import ram_state_dict
 
 
 class AtariRAMWrapper(gym.Wrapper):

@@ -31,18 +31,18 @@ ram_state_dict = {
                           enemies_y=24)
 }
 
-update_dict = {k: {} for k in atari_dict.keys()}
+update_dict = {k: {} for k in ram_state_dict.keys()}
 
-remove_dict = {k: [] for k in atari_dict.keys()}
+remove_dict = {k: [] for k in ram_state_dict.keys()}
 
-for game, d in atari_dict.items():
+for game, d in ram_state_dict.items():
     for k, v in d.items():
         if isinstance(v, range) or isinstance(v, list):
             for i, vi in enumerate(v):
                 update_dict[game]["%s_%i" % (k, i)] = vi
             remove_dict[game].append(k)
 
-for k in atari_dict.keys():
-    atari_dict[k].update(update_dict[k])
+for k in ram_state_dict.keys():
+    ram_state_dict[k].update(update_dict[k])
     for rk in remove_dict[k]:
-        atari_dict[k].pop(rk)
+        ram_state_dict[k].pop(rk)
