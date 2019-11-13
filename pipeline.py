@@ -45,11 +45,12 @@ def parser():
 		help='atari game to use')
 	parser.add_argument('--supervised', default=False,
 		help='flag for fully supervised learning')
-	parse.add_argument('--encoder', default='rand_cnn', 
+	parser.add_argument('--encoder', default='rand_cnn', 
 		help='flag for the encoder method. possible options: rand_cnn, ')
+	return parser
 
 if __name__ == "__main__":
-	parser = ()
+	parser = parser()
 	args = parser.parse_args()
 
 	full_pipeline(args)

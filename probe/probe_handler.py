@@ -2,7 +2,7 @@ import torch
 from torch import nn
 import numpy as np
 
-from probe import Probe, FSProbe
+from probe.probe import Probe, FSProbe
 from torch.utils.data import RandomSampler, BatchSampler
 from sklearn.metrics import f1_score
 
@@ -27,11 +27,11 @@ class ProbeHandler():
         if self.is_supervised:
             for i in range(self.num_state_variables):
                 self.probes.append(FSProbe(self.encoder))
-                self.optimizers.append(torch.optim.Adam(list(self.probes[k].parameters()), lr=3e-4))
+                self.optimizers.append(torch.optim.Adam(list(self.probes[i].parameters()), lr=3e-4))
         else:
             for i in range(self.num_state_variables):
                 self.probes.append(Probe())
-                self.optimizers.append(torch.optim.Adam(list(self.probes[k].parameters()), lr=5e-2))
+                self.optimizers.append(torch.optim.Adam(list(self.probes[i].parameters()), lr=5e-2))
         
         for i in range(self.num_state_variables):
             # TODO: add LR schedulers w warmup and cycles
@@ -130,7 +130,7 @@ class ProbeHandler():
         frames_count = sum(episode_lengths)
 
         # batches is [[batch_size]]
-        batches = BatchSampler(RandomSampler(frames_count), replacement=False, num_samples=frames_count), batch_size, drop_last=True)
+        batches = BatchSampler(RandomSampler(frames_count, replacement=True, num_samples=frames_count), batch_size, drop_last=True)
 
         my_data = []
         my_labels = []
