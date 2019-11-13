@@ -65,7 +65,7 @@ class ProbeHandler():
 
         for ep in range(len(tr_episodes_batched)): # training for each batch
             gt_labels = tr_labels_batched[ep]	
-            cur_episodes = test_episodes_batched[ep]
+            cur_episodes = tr_episodes_batched[ep]
             for j in range(self.num_state_variables): # per state variable
 
                 cur_probe = self.probes[j]
@@ -134,7 +134,6 @@ class ProbeHandler():
 
         my_data = []
         my_labels = []
-        
         for batch in batches:
             batch_data = []
             label_data = []
@@ -152,9 +151,9 @@ class ProbeHandler():
 
     # returns the episode and the index of the episode that the example belongs to
     def determine_index_of_example(self, episode_lengths, index):
-        for i in range(1, len(episode_lengths) + 1):
-            if sum(episode_lengths[:i]) >= index:
-                return (i, index - sum(episode_lengths[:i-1]))
+        for i in range(0, len(episode_lengths)):
+            if sum(episode_lengths[:i+1]) > index:
+                return (i, index - sum(episode_lengths[:i]))
         
         # shouldn't be here
         print('ERROR: determine_index_of_example / probe_handler.py: Invalid index')
