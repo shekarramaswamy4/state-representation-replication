@@ -17,3 +17,5 @@ def testing():
     #         break
     #     # time.sleep(1)
     # env.close()
+# from atariari.benchmark.episodes import get_episodes
+# tr_episodes, val_episodes, tr_labels, val_labels, test_episodes, test_labels = get_episodes(env_name="PitfallNoFrameskip-v4", steps=50000, collect_mode="random_agent")

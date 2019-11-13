@@ -35,29 +35,25 @@ def get_random_episodes(env_name="Pong-v0",
                 1, env.action_space.n)))
 
         obs, reward, done, info = env.step(action)
-        env.render()
-
-        print(obs, reward, done, info, sep="\n")
+        # TODO: remove
+        # env.render()
 
         # TODO: figure out when "episode" would be in the keys, I think it means that the episode has ended
         if 'episode' in info.keys():
             episode_rewards.append(info['episode']['r'])
 
-        # TODO: continue from HERE, also remove stuff from episodes.py in the real repo
+        obs = torch.tensor(obs)
 
         if not done:
-            episodes[step][-1].append(obs.clone())
+            episodes[-1].append(obs.clone())
             if "labels" in info.keys():
-                episode_labels[step][-1].append(info["labels"])
+                episode_labels[-1].append(info["labels"])
         else:
-            episodes[step].append([obs.clone()])
+            episodes.append([obs.clone()])
             if "labels" in info.keys():
-                episode_labels[step].append([info["labels"]])
+                episode_labels.append([info["labels"]])
+            env.reset()
 
-    # Convert to 2d list from 3d list
-    episodes = list(chain.from_iterable(episodes))
-    # Convert to 2d list from 3d list
-    episode_labels = list(chain.from_iterable(episode_labels))
     env.close()
 
     ep_inds = [i for i in range(len(episodes)) if len(
@@ -104,6 +100,13 @@ if __name__ == "__main__":
         tr_labels, val_labels,\
         test_episodes, test_labels = get_random_episodes(env_name="Breakout-v0",
                                                          steps=50000)
+    print(len(tr_episodes))
+    print(len(val_episodes))
+    print(len(tr_labels))
+    print(len(val_labels))
+    print(len(test_episodes))
+    print(len(test_labels))
+
 # for i in range(1000):
 #     env.render()
 #     obs, reward, done, info = env.step(
