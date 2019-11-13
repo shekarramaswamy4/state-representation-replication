@@ -130,10 +130,11 @@ class ProbeHandler():
         frames_count = sum(episode_lengths)
 
         # batches is [[batch_size]]
-        batches = BatchSampler(RandomSampler(frames_count, replacement=True, num_samples=frames_count), batch_size, drop_last=True)
+        batches = BatchSampler(RandomSampler(range(frames_count), replacement=False), batch_size, drop_last=True)
 
         my_data = []
         my_labels = []
+        
         for batch in batches:
             batch_data = []
             label_data = []
@@ -151,7 +152,7 @@ class ProbeHandler():
 
     # returns the episode and the index of the episode that the example belongs to
     def determine_index_of_example(self, episode_lengths, index):
-        for i in range(1, episode_lengths + 1):
+        for i in range(1, len(episode_lengths) + 1):
             if sum(episode_lengths[:i]) >= index:
                 return (i, index - sum(episode_lengths[:i-1]))
         
