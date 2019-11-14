@@ -75,11 +75,11 @@ class ProbeHandler():
                 # if fully supervised, FSProbe has the encoder in its init
                 # if not, we use self.encoder for non FS case and make sure to stop gradient
                 if self.is_supervised: 
-                    pred_labels = cur_probe.forward(encoder_ouput)
+                    pred_labels = cur_probe.forward(encoder_output)
                 else:
                     with torch.no_grad():
-                        encoder_ouput = self.encoder(cur_episodes)
-                    pred_labels = cur_probe.forward(cur_episodes)
+                        encoder_output = self.encoder(cur_episodes)
+                    pred_labels = cur_probe.forward(encoder_output)
 
                 loss = self.loss(gt_labels, pred_labels)
 
@@ -108,17 +108,17 @@ class ProbeHandler():
                 # if fully supervised, FSProbe has the encoder in its init
                 # if not, we use self.encoder for non FS case. we are testing so no need to stop gradient
                 if self.is_supervised: 
-                    pred_labels = cur_probe.forward(encoder_ouput)
+                    pred_labels = cur_probe.forward(encoder_output)
                 else:
-                    encoder_ouput = self.encoder(cur_episodes)
-                    pred_labels = cur_probe.forward(cur_episodes)
+                    encoder_output = self.encoder(cur_episodes)
+                    pred_labels = cur_probe.forward(encoder_output)
 
                 loss = self.loss(gt_labels, pred_labels)
 
                 f1 = calc_f1_score_for_labels(gt_labels, pred_labels)
                 print('F1 score for Probe #' + str(j) + ': ' + str(f1))
 
-                epoch_loss_per_state_variable[k] += loss
+                epoch_loss_per_state_variable[j] += loss
                 # additional metrics
 
         return epoch_loss_per_state_variable
