@@ -144,9 +144,12 @@ class ProbeHandler():
 
                 batch_data.append(cur_datapoint)
                 label_data.append(cur_label)
+            # turn into torch tensor
+            batch_data = torch.stack(batch_data)
             my_data.append(batch_data)
             my_labels.append(label_data)
-        
+        # turn into torch tensor
+        my_data = torch.stack(my_data)
         return (my_data, my_labels)
 
     # returns the episode and the index of the episode that the example belongs to
