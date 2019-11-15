@@ -64,8 +64,7 @@ class ProbeHandler():
 
         self.loss = nn.CrossEntropyLoss()
 
-        self.mapping = {'player_y': 0, 'enemy_y': 1, 'ball_x': 2, 'ball_y': 3, 'enemy_score': 4, 'player_score': 5}
-
+        self.mapping = state_var_mapping
         self.setup_probes()
     
     def setup_probes(self):
@@ -111,11 +110,11 @@ class ProbeHandler():
         for ep in range(len(tr_episodes_batched)): # training for each batch
             gt_labels = tr_labels_batched[ep]
             cur_episodes = tr_episodes_batched[ep]
-            for k, label in gt_labels.items(): # per state variable
-                j = self.mapping[k]
+            for var, var_label in gt_labels.items(): # per state variable
+                idx = self.mapping[var]
 
-                cur_probe = self.probes[j]
-                cur_optim = self.optimizers[j]
+                cur_probe = self.probes[idx]
+                cur_optim = self.optimizers[idx]
                 cur_optim.zero_grad()
 
                 # if fully supervised, FSProbe has the encoder in its init
@@ -127,18 +126,17 @@ class ProbeHandler():
                         encoder_output = self.encoder(cur_episodes)
                     pred_labels = cur_probe(encoder_output)
 
-                label = torch.tensor(label).long()
-                loss = self.loss(pred_labels, label)
+                var_label = torch.tensor(var_label).long()
+                loss = self.loss(pred_labels, var_label)
 
                 loss_val = loss.item()
-                epoch_loss_per_state_variable[j] += loss_val
+                epoch_loss_per_state_variable[idx] += loss_val
 
                 loss.backward()
                 cur_optim.step()
         
         return epoch_loss_per_state_variable
 
-    # currently non functional, see train_epoch
     def run_probes(self, episodes, labels, batch_size):
         '''
         Used to determine loss / accuracy from a episodes and labels.
@@ -151,23 +149,26 @@ class ProbeHandler():
         for ep in range(len(episodes_batched)):
             gt_labels = labels_batched[ep]
             cur_episodes = episodes_batched[ep]
-            for j in range(self.num_state_variables):
-                cur_probe = self.probes[j]
+            for var, var_label in gt_labels.items(): # per state variable
+                idx = self.mapping[var]
+                cur_probe = self.probes[idx]
 
                 # if fully supervised, FSProbe has the encoder in its init
                 # if not, we use self.encoder for non FS case. we are testing so no need to stop gradient
                 if self.is_supervised: 
-                    pred_labels = cur_probe.forward(encoder_output)
+                    pred_labels = cur_probe(encoder_output)
                 else:
                     encoder_output = self.encoder(cur_episodes)
-                    pred_labels = cur_probe.forward(encoder_output)
+                    pred_labels = cur_probe(encoder_output)
 
-                loss = self.loss(gt_labels, pred_labels)
+                var_label = torch.tensor(var_label).long()
+                loss = self.loss(pred_labels, label)
 
-                f1 = calc_f1_score_for_labels(gt_labels, pred_labels)
-                print('F1 score for Probe #' + str(j) + ': ' + str(f1))
+                f1 = calc_f1_score_for_labels(pred_labels, var_label)
+                print('F1 score for Probe #' + str(idx) + ': ' + str(f1))
 
-                epoch_loss_per_state_variable[j] += loss
+                loss_val = loss.item()
+                epoch_loss_per_state_variable[idx] += loss_val
                 # additional metrics
 
         return epoch_loss_per_state_variable

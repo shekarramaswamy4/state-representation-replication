@@ -29,8 +29,8 @@ def full_pipeline(args):
 	tr_episodes, val_episodes,\
 	tr_labels, val_labels,\
 	test_episodes, test_labels = get_episodes(env_name=args.game, 
-										steps=5000, 
-										collect_mode="random_agent")
+										steps=args.collection_steps, 
+										collect_mode=args.agent_collect_mode)
 	# train encoder here if it's one that needs training (ex. dim, not randcnn)
 
 	encoder = RandCNN()
@@ -51,7 +51,12 @@ def parser():
 	parser.add_argument('--supervised', default=False,
 		help='flag for fully supervised learning')
 	parser.add_argument('--encoder', default='rand_cnn', 
-		help='flag for the encoder method. possible options: rand_cnn, ')
+		help='flag for the encoder method. possible options: rand_cnn, ...')
+	parser.add_argument('--collection_steps', default=5000, 
+		help='number of steps to collect episodes for')
+	parser.add_argument('--agent_collect_mode', default='random_agent', 
+		help='collection agent type')
+
 	return parser
 
 if __name__ == "__main__":
