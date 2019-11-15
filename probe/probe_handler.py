@@ -8,6 +8,7 @@ from sklearn.metrics import f1_score
 
 from collections import defaultdict
 
+# NEEDS TO CHANGE
 class appendabledict(defaultdict):
     def __init__(self, type_=list, *args, **kwargs):
         self.type_ = type_
@@ -52,7 +53,7 @@ def calc_f1_score_for_labels(gt_labels, pred_labels):
     return f1_score(gt_labels, pred_labels)
 
 class ProbeHandler():
-    def __init__(self, num_state_variables, encoder, is_supervised = False):
+    def __init__(self, num_state_variables, encoder, state_var_mapping, is_supervised = False):
         self.num_state_variables = num_state_variables
         self.encoder = encoder
         assert self.encoder is not None # sanity

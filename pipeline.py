@@ -15,6 +15,9 @@ train encoder
 run probe and get results
 '''
 
+# ordering for state variables in dictionary form
+game_mappings = {'Pong-v0': {'player_y': 0, 'enemy_y': 1, 'ball_x': 2, 'ball_y': 3, 'enemy_score': 4, 'player_score': 5}}
+
 def full_pipeline(args):
 	print('running full pipeline')
 	# get training, validation, testing data
@@ -25,7 +28,7 @@ def full_pipeline(args):
 
 	tr_episodes, val_episodes,\
 	tr_labels, val_labels,\
-	test_episodes, test_labels = get_episodes(env_name="Pong-v0", 
+	test_episodes, test_labels = get_episodes(env_name=args.game, 
 										steps=5000, 
 										collect_mode="random_agent")
 	# train encoder here if it's one that needs training (ex. dim, not randcnn)
@@ -33,7 +36,8 @@ def full_pipeline(args):
 	encoder = RandCNN()
 	# probe handler needs to know how many state variables we are using
 	# right now its hardcoded to 6 for pong
-	probe_handler = ProbeHandler(6, encoder, is_supervised=args.supervised)
+	state_vars_for_game = game_mappings[args.game]
+	probe_handler = ProbeHandler(len(state_vars_for_game), encoder, state_vars_for_game, is_supervised=args.supervised)
 	probe_handler.train(tr_episodes, tr_labels)
 	probe_handler.validate(val_episodes, val_labels)
 	probe_handler.test(test_episodes, test_labels)
