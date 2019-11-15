@@ -32,7 +32,8 @@ def full_pipeline(args):
 
 	encoder = RandCNN()
 	# probe handler needs to know how many state variables we are using
-	probe_handler = ProbeHandler(3, encoder, is_supervised=args.supervised)
+	# right now its hardcoded to 6 for pong
+	probe_handler = ProbeHandler(6, encoder, is_supervised=args.supervised)
 	probe_handler.train(tr_episodes, tr_labels)
 	probe_handler.validate(val_episodes, val_labels)
 	probe_handler.test(test_episodes, test_labels)

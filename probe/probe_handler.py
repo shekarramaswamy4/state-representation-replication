@@ -6,6 +6,48 @@ from probe.probe import Probe, FSProbe
 from torch.utils.data import RandomSampler, BatchSampler
 from sklearn.metrics import f1_score
 
+from collections import defaultdict
+
+class appendabledict(defaultdict):
+    def __init__(self, type_=list, *args, **kwargs):
+        self.type_ = type_
+        super().__init__(type_, *args, **kwargs)
+
+    #     def map_(self, func):
+    #         for k, v in self.items():
+    #             self.__setitem__(k, func(v))
+
+    def subslice(self, slice_):
+        """indexes every value in the dict according to a specified slice
+        Parameters
+        ----------
+        slice : int or slice type
+            An indexing slice , e.g., ``slice(2, 20, 2)`` or ``2``.
+        Returns
+        -------
+        sliced_dict : dict (not appendabledict type!)
+            A dictionary with each value from this object's dictionary, but the value is sliced according to slice_
+            e.g. if this dictionary has {a:[1,2,3,4], b:[5,6,7,8]}, then self.subslice(2) returns {a:3,b:7}
+                 self.subslice(slice(1,3)) returns {a:[2,3], b:[6,7]}
+         """
+        sliced_dict = {}
+        for k, v in self.items():
+            sliced_dict[k] = v[slice_]
+        return sliced_dict
+
+    def append_update(self, other_dict):
+        """appends current dict's values with values from other_dict
+        Parameters
+        ----------
+        other_dict : dict
+            A dictionary that you want to append to this dictionary
+        Returns
+        -------
+        Nothing. The side effect is this dict's values change
+         """
+        for k, v in other_dict.items():
+            self.__getitem__(k).append(v)
+
 def calc_f1_score_for_labels(gt_labels, pred_labels):
     return f1_score(gt_labels, pred_labels)
 
@@ -20,6 +62,8 @@ class ProbeHandler():
         self.optimizers = []
 
         self.loss = nn.CrossEntropyLoss()
+
+        self.mapping = {'player_y': 0, 'enemy_y': 1, 'ball_x': 2, 'ball_y': 3, 'enemy_score': 4, 'player_score': 5}
 
         self.setup_probes()
     
@@ -64,9 +108,10 @@ class ProbeHandler():
         epoch_loss_per_state_variable = np.zeros(self.num_state_variables)
 
         for ep in range(len(tr_episodes_batched)): # training for each batch
-            gt_labels = tr_labels_batched[ep]	
+            gt_labels = tr_labels_batched[ep]
             cur_episodes = tr_episodes_batched[ep]
-            for j in range(self.num_state_variables): # per state variable
+            for k, label in gt_labels.items(): # per state variable
+                j = self.mapping[k]
 
                 cur_probe = self.probes[j]
                 cur_optim = self.optimizers[j]
@@ -75,21 +120,24 @@ class ProbeHandler():
                 # if fully supervised, FSProbe has the encoder in its init
                 # if not, we use self.encoder for non FS case and make sure to stop gradient
                 if self.is_supervised: 
-                    pred_labels = cur_probe.forward(encoder_output)
+                    pred_labels = cur_probe(cur_episodes)
                 else:
                     with torch.no_grad():
                         encoder_output = self.encoder(cur_episodes)
-                    pred_labels = cur_probe.forward(encoder_output)
+                    pred_labels = cur_probe(encoder_output)
 
-                loss = self.loss(gt_labels, pred_labels)
+                label = torch.tensor(label).long()
+                loss = self.loss(pred_labels, label)
 
-                epoch_loss_per_state_variable[k] += loss
+                loss_val = loss.item()
+                epoch_loss_per_state_variable[j] += loss_val
 
                 loss.backward()
                 cur_optim.step()
         
         return epoch_loss_per_state_variable
 
+    # currently non functional, see train_epoch
     def run_probes(self, episodes, labels, batch_size):
         '''
         Used to determine loss / accuracy from a episodes and labels.
@@ -136,20 +184,21 @@ class ProbeHandler():
         my_labels = []
         for batch in batches:
             batch_data = []
-            label_data = []
+            label_data = appendabledict()
             for i in batch:
                 ep_idx, idx = self.determine_index_of_example(episode_lengths, i)
                 cur_datapoint = episodes[ep_idx][idx]
                 cur_label = labels[ep_idx][idx]
 
                 batch_data.append(cur_datapoint)
-                label_data.append(cur_label)
+                label_data.append_update(cur_label)
             # turn into torch tensor
             batch_data = torch.stack(batch_data)
             my_data.append(batch_data)
             my_labels.append(label_data)
         # turn into torch tensor
-        my_data = torch.stack(my_data)
+        # my_data = torch.stack(my_data)
+        # my_labels = torch.stack(my_labels)
         return (my_data, my_labels)
 
     # returns the episode and the index of the episode that the example belongs to
