@@ -8,47 +8,6 @@ from sklearn.metrics import f1_score
 
 from collections import defaultdict
 
-# NEEDS TO CHANGE
-class appendabledict(defaultdict):
-    def __init__(self, type_=list, *args, **kwargs):
-        self.type_ = type_
-        super().__init__(type_, *args, **kwargs)
-
-    #     def map_(self, func):
-    #         for k, v in self.items():
-    #             self.__setitem__(k, func(v))
-
-    def subslice(self, slice_):
-        """indexes every value in the dict according to a specified slice
-        Parameters
-        ----------
-        slice : int or slice type
-            An indexing slice , e.g., ``slice(2, 20, 2)`` or ``2``.
-        Returns
-        -------
-        sliced_dict : dict (not appendabledict type!)
-            A dictionary with each value from this object's dictionary, but the value is sliced according to slice_
-            e.g. if this dictionary has {a:[1,2,3,4], b:[5,6,7,8]}, then self.subslice(2) returns {a:3,b:7}
-                 self.subslice(slice(1,3)) returns {a:[2,3], b:[6,7]}
-         """
-        sliced_dict = {}
-        for k, v in self.items():
-            sliced_dict[k] = v[slice_]
-        return sliced_dict
-
-    def append_update(self, other_dict):
-        """appends current dict's values with values from other_dict
-        Parameters
-        ----------
-        other_dict : dict
-            A dictionary that you want to append to this dictionary
-        Returns
-        -------
-        Nothing. The side effect is this dict's values change
-         """
-        for k, v in other_dict.items():
-            self.__getitem__(k).append(v)
-
 def calc_f1_score_for_labels(gt_labels, pred_labels):
     return f1_score(gt_labels, pred_labels)
 
@@ -186,21 +145,17 @@ class ProbeHandler():
         my_labels = []
         for batch in batches:
             batch_data = []
-            label_data = appendabledict()
+            label_data = {}
             for i in batch:
                 ep_idx, idx = self.determine_index_of_example(episode_lengths, i)
                 cur_datapoint = episodes[ep_idx][idx]
                 cur_label = labels[ep_idx][idx]
-
                 batch_data.append(cur_datapoint)
-                label_data.append_update(cur_label)
+                self.append_dict_to_current(label_data, cur_label)
             # turn into torch tensor
             batch_data = torch.stack(batch_data)
             my_data.append(batch_data)
             my_labels.append(label_data)
-        # turn into torch tensor
-        # my_data = torch.stack(my_data)
-        # my_labels = torch.stack(my_labels)
         return (my_data, my_labels)
 
     # returns the episode and the index of the episode that the example belongs to
@@ -212,3 +167,17 @@ class ProbeHandler():
         # shouldn't be here
         print('ERROR: determine_index_of_example / probe_handler.py: Invalid index')
         return (0, 0)
+    
+    # appends newdict items to current
+    def append_dict_to_current(self, current_dict, new_dict):
+        if len(current_dict) == 0:
+            for key, value in new_dict.items():
+                current_dict[key] = [value]
+        else:
+            for key, value in new_dict.items():
+                cur_arr = current_dict[key]
+                cur_arr.append(value)
+                current_dict[key] = cur_arr
+        
+        return current_dict
+
