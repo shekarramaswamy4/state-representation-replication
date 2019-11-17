@@ -60,8 +60,10 @@ class ProbeHandler():
         metrics = self.run_probes(test_episodes, test_labels, batch_size)
         print(metrics)
 
-    # train for one epoch
     def train_epoch(self, train_episodes, train_labels, batch_size):
+        '''
+        Runs training for one epoch.
+        '''
 
         tr_episodes_batched, tr_labels_batched = self.randomly_sample_for_batch(train_episodes, train_labels, batch_size)
         epoch_loss_per_state_variable = np.zeros(self.num_state_variables)
@@ -133,6 +135,10 @@ class ProbeHandler():
         return epoch_loss_per_state_variable
 
     def randomly_sample_for_batch(self, episodes, labels, batch_size):
+        '''
+        Generates batches of length batch_size from episodes and labels.
+        Output is [tensor] for data, and [state_var_dict] for labels.
+        '''
         episode_lengths = []
         for ep in episodes:
             episode_lengths.append(len(ep))
@@ -160,6 +166,11 @@ class ProbeHandler():
 
     # returns the episode and the index of the episode that the example belongs to
     def determine_index_of_example(self, episode_lengths, index):
+        '''
+        Helper for randomly_sample_for_batch. Determines which episode and what
+        position the current example (index) is from, dependent on non uniform
+        episode_lengths.
+        '''
         for i in range(0, len(episode_lengths)):
             if sum(episode_lengths[:i+1]) > index:
                 return (i, index - sum(episode_lengths[:i]))
