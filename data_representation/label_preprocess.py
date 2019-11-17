@@ -31,6 +31,13 @@ def remove_low_entropy_labels(episode_labels, entropy_threshold=0.3):
     flat_label_list = list(chain.from_iterable(episode_labels))
     counts = {}
 
+    # counts: {
+    #   label_key: {
+    #     value_1: count_1,
+    #     value_2: count_2,
+    #     ...
+    #   }
+    # }
     for label_dict in flat_label_list:
         for k in label_dict:
             counts[k] = counts.get(k, {})

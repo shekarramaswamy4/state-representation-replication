@@ -1,6 +1,11 @@
 
+from atariari.benchmark.episodes import get_episodes
+
+
 def testing():
     pass
+
+
     # observation = env.reset()
     # print(observation.shape)
     # print(env.observation_space)
@@ -17,5 +22,12 @@ def testing():
     #         break
     #     # time.sleep(1)
     # env.close()
-# from atariari.benchmark.episodes import get_episodes
 # tr_episodes, val_episodes, tr_labels, val_labels, test_episodes, test_labels = get_episodes(env_name="PitfallNoFrameskip-v4", steps=50000, collect_mode="random_agent")
+tr_episodes, val_episodes, tr_labels, val_labels, test_episodes, test_labels = get_episodes(
+    env_name="Breakout-v0", steps=50000, collect_mode="random_agent")
+print(len(tr_episodes))
+print(len(val_episodes))
+print(len(tr_labels))
+print(len(val_labels))
+print(len(test_episodes))
+print(len(test_labels))

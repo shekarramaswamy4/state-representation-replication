@@ -6,12 +6,6 @@ from collections import deque
 from itertools import chain
 import torch
 
-# TODO: FINAL GOAL
-# tr_episodes, val_episodes,\
-#     tr_labels, val_labels,\
-#     test_episodes, test_labels = get_random_rollouts(env_name="Breakout-v0",
-#                                               steps=50000)
-
 
 def get_random_episodes(env_name="Pong-v0",
                         steps=50000,
@@ -22,7 +16,6 @@ def get_random_episodes(env_name="Pong-v0",
 
     env = make_atari_env(env_name, seed=seed)
     env.reset()
-    episode_rewards = deque(maxlen=10)
 
     print('-------Collecting samples----------')
     # (n_processes * n_episodes * episode_len)
@@ -35,12 +28,6 @@ def get_random_episodes(env_name="Pong-v0",
                 1, env.action_space.n)))
 
         obs, reward, done, info = env.step(action)
-        # TODO: remove
-        # env.render()
-
-        # TODO: figure out when "episode" would be in the keys, I think it means that the episode has ended
-        if 'episode' in info.keys():
-            episode_rewards.append(info['episode']['r'])
 
         obs = torch.tensor(obs)
 
@@ -52,6 +39,9 @@ def get_random_episodes(env_name="Pong-v0",
             episodes.append([obs.clone()])
             if "labels" in info.keys():
                 episode_labels.append([info["labels"]])
+
+            # reset here because in a vectorized environment, the environment
+            # gets automatically reset when each environment is done
             env.reset()
 
     env.close()
@@ -99,7 +89,8 @@ if __name__ == "__main__":
     tr_episodes, val_episodes,\
         tr_labels, val_labels,\
         test_episodes, test_labels = get_random_episodes(env_name="Breakout-v0",
-                                                         steps=50000)
+                                                         steps=5000,
+                                                         min_episode_length=2)
     print(len(tr_episodes))
     print(len(val_episodes))
     print(len(tr_labels))
