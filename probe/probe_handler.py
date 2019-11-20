@@ -43,6 +43,18 @@ class ProbeHandler():
         for i in range(self.num_state_variables):
             # TODO: add LR schedulers w warmup and cycles
             pass
+    
+    def print_metrics(self, metrics, training = False):
+        '''
+        Prints loss, accuracy, f1 (not training) from metrics
+        '''
+        print('Loss')
+        print(metrics[0])
+        print('Accuracy')
+        print(metrics[1])
+        if not training:
+            print('F1 scores')
+            print(metrics[2])
 
     def train(self, train_episodes, train_labels, val_episodes = None, val_labels = None, epochs = 100, batch_size = 64):
         print('--- Training Probes ---')
@@ -51,22 +63,25 @@ class ProbeHandler():
         for i in range(epochs):
             print('Epoch: ' + str(i) + ' of ' + str(epochs))
             metrics = self.train_epoch(train_episodes, train_labels, batch_size)
-            print(metrics)
+            self.print_metrics(metrics, training = True)
             if val_episodes is not None and val_labels is not None:
+                print()
                 print('Validation: ' + str(i) + ' of ' + str(epochs))
                 metrics = self.run_probes(val_episodes, val_labels, batch_size)
-                print(metrics)
+                self.print_metrics(metrics)
+                print()
+                print()
         print('--- Finished training probes. ---')
     
     def validate(self, val_episodes, val_labels, batch_size = 64):
         print('--- Validating Probes ---')
         metrics = self.run_probes(val_episodes, val_labels, batch_size)
-        print(metrics)
+        self.print_metrics(metrics)
         
     def test(self, test_episodes, test_labels, batch_size = 64):
         print('--- Testing Probes ---')
         metrics = self.run_probes(test_episodes, test_labels, batch_size)
-        print(metrics)
+        self.print_metrics(metrics)
 
     def train_epoch(self, train_episodes, train_labels, batch_size):
         '''
