@@ -28,7 +28,7 @@ def full_pipeline(args):
 	# probe training, validation, testing
 	state_vars_for_game = game_mappings[args.game]
 	probe_handler = ProbeHandler(len(state_vars_for_game), encoder, state_vars_for_game, is_supervised=args.supervised)
-	probe_handler.train(tr_episodes, tr_labels, epochs=int(args.epochs))
+	probe_handler.train(tr_episodes, tr_labels, val_episodes=val_episodes, val_labels=val_labels, epochs=int(args.epochs))
 	probe_handler.validate(val_episodes, val_labels)
 	probe_handler.test(test_episodes, test_labels)
 

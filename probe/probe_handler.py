@@ -9,9 +9,7 @@ from sklearn.metrics import f1_score
 from collections import defaultdict
 
 def calc_f1_score_for_labels(pred_labels, gt_labels):
-    pred_detach = pred_labels.detach().numpy()
-    gt_detach = gt_labels.detach().numpy()
-    return f1_score(pred_detach, gt_detach)
+    return f1_score(pred_labels, gt_labels, average="weighted")
 
 def calculate_multiclass_accuracy(preds, labels):
     acc = float(np.sum((preds == labels).astype(int)) / len(labels))
@@ -46,7 +44,7 @@ class ProbeHandler():
             # TODO: add LR schedulers w warmup and cycles
             pass
 
-    def train(self, train_episodes, train_labels, epochs = 100, batch_size = 64):
+    def train(self, train_episodes, train_labels, val_episodes = None, val_labels = None, epochs = 100, batch_size = 64):
         print('--- Training Probes ---')
         self.setup_probes()
 
@@ -54,6 +52,10 @@ class ProbeHandler():
             print('Epoch: ' + str(i) + ' of ' + str(epochs))
             metrics = self.train_epoch(train_episodes, train_labels, batch_size)
             print(metrics)
+            if val_episodes is not None and val_labels is not None:
+                print('Validation: ' + str(i) + ' of ' + str(epochs))
+                metrics = self.run_probes(val_episodes, val_labels, batch_size)
+                print(metrics)
         print('--- Finished training probes. ---')
     
     def validate(self, val_episodes, val_labels, batch_size = 64):
@@ -111,7 +113,8 @@ class ProbeHandler():
 
                 loss.backward()
                 cur_optim.step()
-        
+    
+        epoch_loss_per_state_variable = np.array(epoch_loss_per_state_variable) / len(tr_episodes_batched)
         accuracy_per_state_variable = np.array(accuracy_per_state_variable) / len(tr_episodes_batched)
         return epoch_loss_per_state_variable, accuracy_per_state_variable
 
@@ -124,6 +127,7 @@ class ProbeHandler():
         episodes_batched, labels_batched = self.randomly_sample_for_batch(episodes, labels, batch_size)
         epoch_loss_per_state_variable = np.zeros(self.num_state_variables)
         accuracy_per_state_variable = np.zeros(self.num_state_variables)
+        f1_per_state_variable = np.zeros(self.num_state_variables)
 
         for ep in range(len(episodes_batched)):
             gt_labels = labels_batched[ep]
@@ -143,9 +147,12 @@ class ProbeHandler():
                 var_label = torch.tensor(var_label).long()
                 loss = self.loss(pred_labels, var_label)
 
-                # TODO: f1 score
-                # f1 = calc_f1_score_for_labels(pred_labels, var_label)
-                # print('F1 score for Probe #' + str(idx) + ': ' + str(f1))
+                pred_labels_npy = pred_labels.detach().numpy()
+                preds = np.argmax(pred_labels_npy, axis=1)
+
+                var_label_npy = var_label.detach().numpy()
+                f1 = calc_f1_score_for_labels(preds, var_label_npy)
+                f1_per_state_variable[idx] += f1
 
                 # loss metric
                 loss_val = loss.item()
@@ -158,8 +165,10 @@ class ProbeHandler():
                 # this is how authors compute accuracy. it is bad. we should use a different metric, eventually.
                 accuracy_per_state_variable[idx] += calculate_multiclass_accuracy(pred_labels, var_label)
 
+        epoch_loss_per_state_variable = np.array(epoch_loss_per_state_variable) / len(episodes_batched)
         accuracy_per_state_variable = np.array(accuracy_per_state_variable) / len(episodes_batched)
-        return epoch_loss_per_state_variable, accuracy_per_state_variable
+        f1_per_state_variable = np.array(f1_per_state_variable) / len(episodes_batched)
+        return epoch_loss_per_state_variable, accuracy_per_state_variable, f1_per_state_variable
 
     def randomly_sample_for_batch(self, episodes, labels, batch_size):
         '''
