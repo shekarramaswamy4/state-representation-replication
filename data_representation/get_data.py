@@ -1,6 +1,6 @@
 import time
-from envs import make_atari_env
-from label_preprocess import remove_duplicates, remove_low_entropy_labels
+from .envs import make_atari_env
+from .label_preprocess import remove_duplicates, remove_low_entropy_labels
 import numpy as np
 from collections import deque
 from itertools import chain
@@ -32,11 +32,11 @@ def get_random_episodes(env_name="Pong-v0",
         obs = torch.tensor(obs)
 
         if not done:
-            episodes[-1].append(obs.clone())
+            episodes[-1].append(obs.clone().float())
             if "labels" in info.keys():
                 episode_labels[-1].append(info["labels"])
         else:
-            episodes.append([obs.clone()])
+            episodes.append([obs.clone().float()])
             if "labels" in info.keys():
                 episode_labels.append([info["labels"]])
 

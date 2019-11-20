@@ -4,24 +4,19 @@ import time
 
 from probe.probe_handler import ProbeHandler
 from encoders.rand_cnn import RandCNN 
-from atariari.benchmark.wrapper import AtariARIWrapper
-from atariari.benchmark.episodes import get_episodes
+
+from data_representation.get_data import get_random_episodes
 
 # ordering for state variables in dictionary form
 game_mappings = {'Pong-v0': {'player_y': 0, 'enemy_y': 1, 'ball_x': 2, 'ball_y': 3, 'enemy_score': 4, 'player_score': 5}}
 
 def full_pipeline(args):
-	# setup environment
-	env = AtariARIWrapper(gym.make(args.game))
-	obs = env.reset()
-	obs, reward, done, info = env.step(1)
-
 	# collect data
 	tr_episodes, val_episodes,\
 	tr_labels, val_labels,\
-	test_episodes, test_labels = get_episodes(env_name=args.game, 
+	test_episodes, test_labels = get_random_episodes(env_name=args.game, 
 										steps=args.collection_steps, 
-										collect_mode=args.agent_collect_mode)
+										min_episode_length=2)
 
 	# encoder setup
 	encoder = None

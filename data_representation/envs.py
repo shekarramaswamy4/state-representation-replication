@@ -8,7 +8,7 @@ from baselines import bench
 from baselines.common.atari_wrappers import make_atari, EpisodicLifeEnv, FireResetEnv, WarpFrame, ScaledFloatFrame, \
     ClipRewardEnv, FrameStack
 from a2c_ppo_acktr.envs import TransposeImage
-from wrapper import AtariRAMWrapper
+from .wrapper import AtariRAMWrapper
 
 
 def make_atari_env(env_name, seed=42, log_dir="./.atari_env_log_dir", run_folder_name="default_run"):
