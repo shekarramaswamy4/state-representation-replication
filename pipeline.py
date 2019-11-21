@@ -40,7 +40,7 @@ def parser():
 		help='flag for fully supervised learning')
 	parser.add_argument('--encoder', default='rand_cnn', 
 		help='flag for the encoder method. possible options: rand_cnn, ...')
-	parser.add_argument('--collection_steps', default=5000, 
+	parser.add_argument('--collection_steps', default=50000, 
 		help='number of steps to collect episodes for')
 	parser.add_argument('--agent_collect_mode', default='random_agent', 
 		help='collection agent type')
