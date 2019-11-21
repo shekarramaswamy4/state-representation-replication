@@ -129,6 +129,7 @@ class ProbeHandler():
         for ep in range(len(tr_episodes_batched)): # training for each batch
             gt_labels = tr_labels_batched[ep]
             cur_episodes = tr_episodes_batched[ep]
+            # TODO: this depends on dictionary preserving game state variable order
             for var, var_label in gt_labels.items(): # per state variable
                 idx = self.mapping[var]
 
