@@ -9,6 +9,7 @@ from data_representation.get_data import get_random_episodes
 
 # ordering for state variables in dictionary form
 game_mappings = {'Pong-v0': {'player_y': 0, 'enemy_y': 1, 'ball_x': 2, 'ball_y': 3, 'enemy_score': 4, 'player_score': 5}}
+collection_lengths = {'Pong-v0' : 2}
 
 def full_pipeline(args):
 	# collect data
@@ -16,7 +17,7 @@ def full_pipeline(args):
 	tr_labels, val_labels,\
 	test_episodes, test_labels = get_random_episodes(env_name=args.game, 
 										steps=args.collection_steps, 
-										min_episode_length=2)
+										min_episode_length=collection_lengths[args.game])
 
 	# encoder setup
 	encoder = None
