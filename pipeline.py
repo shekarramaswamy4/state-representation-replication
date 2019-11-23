@@ -2,7 +2,7 @@ import argparse
 import gym
 import time
 
-from probe.probe_handler import ProbeHandler
+from handlers.probe_handler import ProbeHandler
 from encoders.rand_cnn import RandCNN 
 
 from data_representation.get_data import get_random_episodes
