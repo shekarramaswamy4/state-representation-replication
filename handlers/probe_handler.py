@@ -16,10 +16,11 @@ def calculate_multiclass_accuracy(preds, labels):
     return acc
 
 class ProbeHandler():
-    def __init__(self, num_state_variables, encoder, state_var_mapping, is_supervised = False):
+    def __init__(self, num_state_variables, encoder, state_var_mapping, run_id = '', is_supervised = False):
         self.num_state_variables = num_state_variables
         self.encoder = encoder
         assert self.encoder is not None # sanity
+        self.run_id = run_id
         self.is_supervised = is_supervised
 
         self.probes = []
@@ -67,15 +68,15 @@ class ProbeHandler():
         val_acc_arr = []
         val_f1_arr = []
         
-        for i in range(epochs):
-            print('Epoch: ' + str(i + 1) + ' of ' + str(epochs))
+        for i in range(1, epochs + 1):
+            print('Epoch: ' + str(i) + ' of ' + str(epochs))
             metrics = self.train_epoch(train_episodes, train_labels, batch_size)
             train_loss_arr.append(metrics[0])
             train_acc_arr.append(metrics[1])
             self.print_metrics(metrics, training = True)
             if val_episodes is not None and val_labels is not None:
                 print()
-                print('Validation: ' + str(i + 1) + ' of ' + str(epochs))
+                print('Validation: ' + str(i) + ' of ' + str(epochs))
                 metrics = self.run_probes(val_episodes, val_labels, batch_size)
                 self.print_metrics(metrics)
                 val_loss_arr.append(metrics[0])
@@ -86,26 +87,13 @@ class ProbeHandler():
 
             if i % 10 == 0:
                 import pandas as pd
-                pd.DataFrame(train_loss_arr).to_csv("./runs/train_loss_arr.csv", header=None, index=None)
-                pd.DataFrame(train_acc_arr).to_csv("./runs/train_acc_arr.csv", header=None, index=None)
-                pd.DataFrame(val_loss_arr).to_csv("./runs/val_loss_arr.csv", header=None, index=None)
-                pd.DataFrame(val_acc_arr).to_csv("./runs/val_acc_arr.csv", header=None, index=None)
-                pd.DataFrame(val_f1_arr).to_csv("./runs/val_f1_arr.csv", header=None, index=None)
+                pd.DataFrame(train_loss_arr).to_csv("./runs/" + self.run_id + "_train_loss_arr.csv", header=None, index=None)
+                pd.DataFrame(train_acc_arr).to_csv("./runs/" + self.run_id + "_train_acc_arr.csv", header=None, index=None)
+                pd.DataFrame(val_loss_arr).to_csv("./runs/" + self.run_id + "_val_loss_arr.csv", header=None, index=None)
+                pd.DataFrame(val_acc_arr).to_csv("./runs/" + self.run_id + "_val_acc_arr.csv", header=None, index=None)
+                pd.DataFrame(val_f1_arr).to_csv("./runs/" + self.run_id + "_val_f1_arr.csv", header=None, index=None)
 
         print('--- Finished training probes. ---')
-        train_loss_arr = np.array(train_loss_arr)
-        train_acc_arr = np.array(train_acc_arr)
-
-        val_loss_arr = np.array(val_loss_arr)
-        val_acc_arr = np.array(val_acc_arr)
-        val_f1_arr = np.array(val_f1_arr)
-
-        import pandas as pd
-        pd.DataFrame(train_loss_arr).to_csv("./runs/train_loss_arr.csv", header=None, index=None)
-        pd.DataFrame(train_acc_arr).to_csv("./runs/train_acc_arr.csv", header=None, index=None)
-        pd.DataFrame(val_loss_arr).to_csv("./runs/val_loss_arr.csv", header=None, index=None)
-        pd.DataFrame(val_acc_arr).to_csv("./runs/val_acc_arr.csv", header=None, index=None)
-        pd.DataFrame(val_f1_arr).to_csv("./runs/val_f1_arr.csv", header=None, index=None)
     
     def validate(self, val_episodes, val_labels, batch_size = 64):
         print('--- Validating Probes ---')
