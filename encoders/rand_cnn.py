@@ -23,10 +23,13 @@ class RandCNN(nn.Module):
         num_features = 256
         self.lin_layer = nn.Linear(final_conv_size, num_features)
 
-    def forward(self, x):
+    def forward(self, x, intermediate_layer=False):
         x = F.relu(self.conv1(x))
         x = F.relu(self.conv2(x))
         x = F.relu(self.conv3(x))
+        if intermediate_layer:
+            # returned output has dimensions: batch_size x channel x height x width
+            return x
         x = F.relu(self.conv4(x))
         x = self.flatten(x)
         x = self.lin_layer(x)
