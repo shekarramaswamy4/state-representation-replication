@@ -18,6 +18,10 @@ class StDimHandler:
         # TODO: the 64 here is set as the default batch size, but this might change, probably why they used a matmul instead 
         self.bilinear_gl = nn.Bilinear(256, 128, 64, bias=False)
         self.bilinear_ll = nn.Bilinear(128, 128, 64, bias=False)
+        
+        # TODO: puts these into "train" mode, unclear what effect this has but the authors did it
+        self.encoder.train(), self.bilinear_gl.train(), self.bilinear_ll.train()
+        
         self.optimizer = torch.optim.Adam(list(self.encoder.parameters()) +
                                         list(self.bilinear_gl.parameters()) +
                                         list(self.bilinear_ll.parameters()),
@@ -159,6 +163,11 @@ class StDimHandler:
                     local_local_loss += loss_for_patch
             local_local_loss /= second_height_range * second_width_range
             print(f"local_local_loss: {local_local_loss}")
+            
+            total_loss = global_local_loss + local_local_loss
+            self.optimizer.zero_grad()
+            total_loss.backward()
+            self.optimizer.step()
 
         #         cur_probe = self.probes[idx]
         #         cur_optim = self.optimizers[idx]
