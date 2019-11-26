@@ -7,6 +7,8 @@ import torch.nn.functional as F
 from torch.utils.data import RandomSampler, BatchSampler
 from encoders.rand_cnn import RandCNN
 
+import matplotlib.pyplot as plt
+
 class StDimHandler:
     '''
     Trains an encoder based on the InfoNCE ST-DIM method.
@@ -33,7 +35,7 @@ class StDimHandler:
         :param episodes: 2D np array [num_episodes x episode_length]
                          each element is a 210 x 160 frame
         :return: batches of subsequent frames, dimensions: num_batches x batch_size,
-                 each batch looks like [(x_t1,  x_t1prev), (x_t2,  x_t2prev), ...]
+                 each batch looks like [(first_frame_1,  next_frame_1), (first_frame_2,  next_frame_2), ...]
         '''
         episode_lengths = []
         for ep in episodes:
@@ -41,24 +43,31 @@ class StDimHandler:
         frames_count = sum(episode_lengths)
 
         frame_batches = []
-        
         # do this twice to approximately cover all the frames because the random sampler only runs through half the indices
-        for _ in range(2):
-            # don't want any frames that are right next to each other, sample for indices that are half the number of frames
-            frame_idx_batches = BatchSampler(RandomSampler(range(frames_count // 2), replacement=False), batch_size, drop_last=True)
-            for frame_idx_batch in frame_idx_batches:
-                frame_batches.append([])
-                # multiply all indices by 2 to account for previous sampling scheme so every index is at least separated by 1
-                frame_idx_batch = [2 * i for i in frame_idx_batch]
-                for frame_idx in frame_idx_batch:
-                    ep_idx, idx_within_ep = self.determine_index_of_example(episode_lengths, frame_idx)
-                    # if it was the first frame in the episode, take the frame after
-                    if idx_within_ep == 0:
-                        frame_batches[-1].append(torch.stack((episodes[ep_idx][idx_within_ep] / 255.0, episodes[ep_idx][idx_within_ep + 1] / 255.0)))
-                    else:
-                        frame_batches[-1].append(torch.stack((episodes[ep_idx][idx_within_ep - 1] / 255.0, episodes[ep_idx][idx_within_ep] / 255.0)))
-                # make into a Tensor
-                frame_batches[-1] = torch.stack(frame_batches[-1])
+        # don't want any frames that are right next to each other, sample for indices that are half the number of frames
+        frame_idx_batches = BatchSampler(RandomSampler(range(frames_count), replacement=False), batch_size, drop_last=True)
+        for frame_idx_batch in frame_idx_batches:
+            frame_batches.append([])
+            x = []
+            # multiply all indices by 2 to account for previous sampling scheme so every index is at least separated by 1
+            frame_idx_batch = [2 * i for i in frame_idx_batch]
+            for frame_idx in frame_idx_batch:
+                ep_idx, idx_within_ep = self.determine_index_of_example(episode_lengths, frame_idx)
+                # if it was the first frame in the episode, take the frame after
+                if idx_within_ep == 0:
+                    # frame_batches[-1].append(torch.stack((episodes[ep_idx][idx_within_ep] / 255.0, episodes[ep_idx][idx_within_ep + 1] / 255.0)))
+                    frame_batches[-1].append((frame_idx, frame_idx + 1))
+                    x.append((ep_idx,idx_within_ep+1))
+                else:
+                    # frame_batches[-1].append(torch.stack((episodes[ep_idx][idx_within_ep - 1] / 255.0, episodes[ep_idx][idx_within_ep] / 255.0)))
+                    frame_batches[-1].append((frame_idx-1, frame_idx))
+                    x.append((ep_idx,idx_within_ep))
+            # make into a Tensor
+            # frame_batches[-1] = torch.stack(frame_batches[-1])
+            z = list(zip(*x))
+            x, y = z[0], z[1]
+            plt.scatter(x, y)
+            plt.show()
         return frame_batches
 
     def determine_index_of_example(self, episode_lengths, index):
