@@ -18,16 +18,25 @@ class StDimHandler:
         self.encoder = RandCNN()
         # TODO: using the bilinear layers doesn't allow for a batch size change
         # TODO: the 64 here is set as the default batch size, but this might change, probably why they used a matmul instead 
-        self.bilinear_gl = nn.Bilinear(256, 128, 64, bias=False)
-        self.bilinear_ll = nn.Bilinear(128, 128, 64, bias=False)
+        # self.bilinear_gl = nn.Bilinear(256, 128, 64, bias=False)
+        # self.bilinear_ll = nn.Bilinear(128, 128, 64, bias=False)
+        
+        self.classifier1 = nn.Linear(256, 128)  # x1 = global, x2=patch, n_channels = 32
+        self.classifier2 = nn.Linear(128, 128)
+        # self.epochs = config['epochs']
+        # self.batch_size = config['batch_size']
+        # self.device = device
+        self.optimizer = torch.optim.Adam(list(self.classifier1.parameters()) + list(self.encoder.parameters()) +
+                                          list(self.classifier2.parameters()),
+                                          lr=3e-4, eps=1e-5)
         
         # TODO: puts these into "train" mode, unclear what effect this has but the authors did it
-        self.encoder.train(), self.bilinear_gl.train(), self.bilinear_ll.train()
+        # self.encoder.train(), self.bilinear_gl.train(), self.bilinear_ll.train()
         
-        self.optimizer = torch.optim.Adam(list(self.encoder.parameters()) +
-                                        list(self.bilinear_gl.parameters()) +
-                                        list(self.bilinear_ll.parameters()),
-                                        lr=3e-4, eps=1e-5)
+        # self.optimizer = torch.optim.Adam(list(self.encoder.parameters()) +
+                                        # list(self.bilinear_gl.parameters()) +
+                                        # list(self.bilinear_ll.parameters()),
+                                        # lr=3e-4, eps=1e-5)
 
     def generate_batches(self, episodes, batch_size):
         '''
@@ -48,26 +57,26 @@ class StDimHandler:
         frame_idx_batches = BatchSampler(RandomSampler(range(frames_count), replacement=False), batch_size, drop_last=True)
         for frame_idx_batch in frame_idx_batches:
             frame_batches.append([])
-            x = []
+            # x = []
             # multiply all indices by 2 to account for previous sampling scheme so every index is at least separated by 1
-            frame_idx_batch = [2 * i for i in frame_idx_batch]
+            # frame_idx_batch = [2 * i for i in frame_idx_batch]
             for frame_idx in frame_idx_batch:
                 ep_idx, idx_within_ep = self.determine_index_of_example(episode_lengths, frame_idx)
                 # if it was the first frame in the episode, take the frame after
                 if idx_within_ep == 0:
-                    # frame_batches[-1].append(torch.stack((episodes[ep_idx][idx_within_ep] / 255.0, episodes[ep_idx][idx_within_ep + 1] / 255.0)))
-                    frame_batches[-1].append((frame_idx, frame_idx + 1))
-                    x.append((ep_idx,idx_within_ep+1))
+                    frame_batches[-1].append(torch.stack((episodes[ep_idx][idx_within_ep] / 255.0, episodes[ep_idx][idx_within_ep + 1] / 255.0)))
+                    # frame_batches[-1].append((frame_idx, frame_idx + 1))
+                    # x.append((ep_idx,idx_within_ep+1))
                 else:
-                    # frame_batches[-1].append(torch.stack((episodes[ep_idx][idx_within_ep - 1] / 255.0, episodes[ep_idx][idx_within_ep] / 255.0)))
-                    frame_batches[-1].append((frame_idx-1, frame_idx))
-                    x.append((ep_idx,idx_within_ep))
+                    frame_batches[-1].append(torch.stack((episodes[ep_idx][idx_within_ep - 1] / 255.0, episodes[ep_idx][idx_within_ep] / 255.0)))
+                    # frame_batches[-1].append((frame_idx-1, frame_idx))
+                    # x.append((ep_idx,idx_within_ep))
             # make into a Tensor
-            # frame_batches[-1] = torch.stack(frame_batches[-1])
-            z = list(zip(*x))
-            x, y = z[0], z[1]
-            plt.scatter(x, y)
-            plt.show()
+            frame_batches[-1] = torch.stack(frame_batches[-1])
+            # z = list(zip(*x))
+            # x, y = z[0], z[1]
+            # plt.scatter(x, y)
+            # plt.show()
         return frame_batches
 
     def determine_index_of_example(self, episode_lengths, index):
@@ -104,20 +113,22 @@ class StDimHandler:
             
             frame_batches = self.generate_batches(train_episodes, batch_size)
             
-            metrics = self.train_epoch(frame_batches)
-            train_loss_arr.append(metrics[0])
-            train_acc_arr.append(metrics[1])
+            self.train_epoch(frame_batches)
+            
+            # metrics = self.train_epoch(frame_batches)
+            # train_loss_arr.append(metrics[0])
+            # train_acc_arr.append(metrics[1])
 
-            if val_episodes is not None and val_labels is not None:
-                print()
-                print('Validation: ' + str(i + 1) + ' of ' + str(epochs))
-                metrics = self.run_probes(val_episodes, val_labels, batch_size)
-                self.print_metrics(metrics)
-                val_loss_arr.append(metrics[0])
-                val_acc_arr.append(metrics[1])
-                val_f1_arr.append(metrics[2])
-                print()
-                print()
+            # if val_episodes is not None and val_labels is not None:
+            #     print()
+            #     print('Validation: ' + str(i + 1) + ' of ' + str(epochs))
+            #     metrics = self.run_probes(val_episodes, val_labels, batch_size)
+            #     self.print_metrics(metrics)
+            #     val_loss_arr.append(metrics[0])
+            #     val_acc_arr.append(metrics[1])
+            #     val_f1_arr.append(metrics[2])
+            #     print()
+            #     print()
 
     def train_epoch(self, frame_batches):
         '''
@@ -125,10 +136,8 @@ class StDimHandler:
         :param frame_batches: list of batches of paired frames, dimensions: num_batches x batch_size x 2 x (1, 210, 160)
         '''
         # training for each batch
-        i = 1
+        i = 0
         for frame_batch in frame_batches:
-            print(f"batch {i}")
-            i+=1
             # frame_batch dimensions: batch_size x 2 x (1, 210, 160)
             global_local_loss = 0
             local_local_loss = 0
@@ -151,12 +160,17 @@ class StDimHandler:
             batch_size = frame_batch.shape[0]
             for h in range(second_height_range):
                 for w in range(second_width_range):
-                    g_mn = self.bilinear_gl(first_frames_global, second_frames_local[:, h, w, :])
-                    # TODO: this cross entropy loss highly optimized 
-                    loss_for_patch = F.cross_entropy(g_mn, torch.arange(batch_size))
+                    # g_mn = self.bilinear_gl(first_frames_global, second_frames_local[:, h, w, :])
+                    # # TODO: this cross entropy loss highly optimized 
+                    # loss_for_patch = F.cross_entropy(g_mn, torch.arange(batch_size))
+                    
+                    predictions = self.classifier1(first_frames_global)
+                    positive = second_frames_local[:, h, w, :]
+                    logits = torch.matmul(predictions, positive.t())
+                    loss_for_patch = F.cross_entropy(logits, torch.arange(batch_size))
+                    
                     global_local_loss += loss_for_patch
             global_local_loss /= second_height_range * second_width_range
-            print(f"global_local_loss: {global_local_loss}")
             
             # local-local loss
             # TODO: this is redundant computation for the encoder
@@ -166,52 +180,24 @@ class StDimHandler:
             batch_size = frame_batch.shape[0]
             for h in range(second_height_range):
                 for w in range(second_width_range):
-                    g_mn = self.bilinear_ll(first_frames_local[:, h, w, :], second_frames_local[:, h, w, :])
-                    # TODO: this cross entropy loss highly optimized 
-                    loss_for_patch = F.cross_entropy(g_mn, torch.arange(batch_size))
+                    # g_mn = self.bilinear_ll(first_frames_local[:, h, w, :], second_frames_local[:, h, w, :])
+                    # # TODO: this cross entropy loss highly optimized 
+                    # loss_for_patch = F.cross_entropy(g_mn, torch.arange(batch_size))
+                    
+                    predictions = self.classifier2(first_frames_local[:, h, w, :])
+                    positive = second_frames_local[:, h, w, :]
+                    logits = torch.matmul(predictions, positive.t())
+                    loss_for_patch = F.cross_entropy(logits, torch.arange(batch_size))
+                    
                     local_local_loss += loss_for_patch
             local_local_loss /= second_height_range * second_width_range
-            print(f"local_local_loss: {local_local_loss}")
-            
+            if i % 10 == 0:
+                print(f"batch {i+1}")
+                print(f"\tglobal_local_loss: {global_local_loss}")
+                print(f"\tlocal_local_loss: {local_local_loss}")
+            i+=1
+                
             total_loss = global_local_loss + local_local_loss
             self.optimizer.zero_grad()
             total_loss.backward()
             self.optimizer.step()
-
-        #         cur_probe = self.probes[idx]
-        #         cur_optim = self.optimizers[idx]
-        #         cur_optim.zero_grad()
-
-        #         # if fully supervised, FSProbe has the encoder in its init
-        #         # if not, we use self.encoder for non FS case and make sure to stop gradient
-        #         if self.is_supervised:
-        #             pred_labels = cur_probe(cur_episodes)
-        #         else:
-        #             with torch.no_grad():
-        #                 encoder_output = self.encoder(cur_episodes)
-        #             pred_labels = cur_probe(encoder_output)
-
-        #         var_label = torch.tensor(var_label).long()
-
-        #         # loss metric
-        #         loss = self.loss(pred_labels, var_label)
-        #         loss_val = loss.item()
-        #         epoch_loss_per_state_variable[idx] += loss_val
-
-        #         # accuracy metric
-        #         pred_labels = pred_labels.detach().numpy()
-        #         pred_labels = np.argmax(pred_labels, axis=1)
-        #         var_label = var_label.detach().numpy()
-
-        #         # this is how authors compute accuracy. it is bad. we should use a different metric, eventually.
-        #         accuracy_per_state_variable[idx] += calculate_multiclass_accuracy(
-        #             pred_labels, var_label)
-
-        #         loss.backward()
-        #         cur_optim.step()
-
-        # epoch_loss_per_state_variable = np.array(
-        #     epoch_loss_per_state_variable) / len(tr_episodes_batched)
-        # accuracy_per_state_variable = np.array(
-        #     accuracy_per_state_variable) / len(tr_episodes_batched)
-        # return epoch_loss_per_state_variable, accuracy_per_state_variable
