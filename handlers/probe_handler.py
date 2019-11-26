@@ -177,7 +177,7 @@ class ProbeHandler():
                 # if fully supervised, FSProbe has the encoder in its init
                 # if not, we use self.encoder for non FS case. we are testing so no need to stop gradient
                 if self.is_supervised: 
-                    pred_labels = cur_probe(encoder_output)
+                    pred_labels = cur_probe(cur_episodes)
                 else:
                     encoder_output = self.encoder(cur_episodes)
                     pred_labels = cur_probe(encoder_output)
