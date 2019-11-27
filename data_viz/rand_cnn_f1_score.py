@@ -6,8 +6,8 @@ import matplotlib.pyplot as plt
 
 # data config
 
-FILE_PREFIX = "pong-sup"
-PLOT_TITLE = f"F1 Scores for Pong using RandomCNN ({FILE_PREFIX})"
+FILE_PREFIX = "pong-stdim-10k"
+PLOT_TITLE = f"F1 Scores for Pong using ST-DIM ({FILE_PREFIX})"
 INDEX_OF_KEYWORD = 2
 DATA_FOLDER = os.path.join(os.path.dirname(
     os.path.abspath(__file__)), "..", "runs")
