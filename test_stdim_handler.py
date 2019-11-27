@@ -33,7 +33,7 @@ def test_stdim(args, gen_new_data = False):
         test_labels = pickle.load(    open("test_data/test_labels.test", "rb"))
 
     handler = StDimHandler()
-    handler.train(tr_episodes, tr_labels)
+    handler.train(tr_episodes, tr_labels, val_episodes=val_episodes, val_labels=val_labels)
     
 def parser():
     parser = argparse.ArgumentParser()
