@@ -11,7 +11,7 @@ from data_representation.get_data import get_random_episodes
 def train_stdim(args, gen_new_data = False):
     # ordering for state variables in dictionary form
     game_mappings = {'Pong-v0': {'player_y': 0, 'enemy_y': 1, 'ball_x': 2, 'ball_y': 3, 'enemy_score': 4, 'player_score': 5}}
-    collection_lengths = {'Pong-v0' : 2}
+    collection_lengths = {'Pong-v0' : 2, 'Breakout-v0': 2}
 
     data_dir=f"{args.game}-{args.collection_steps}"
     
@@ -40,7 +40,7 @@ def train_stdim(args, gen_new_data = False):
         # test_labels = pickle.load(    open(f"{data_dir}/test_labels.test", "rb"))
 
     handler = StDimHandler()
-    handler.train(tr_episodes[:1000], tr_labels[:1000])#, val_episodes=val_episodes, val_labels=val_labels)
+    handler.train(tr_episodes, tr_labels, val_episodes=val_episodes, val_labels=val_labels)
     
 def run_probe_on_stdim(args):
     game_mappings = {'Pong-v0': {'player_y': 0, 'enemy_y': 1, 'ball_x': 2, 'ball_y': 3, 'enemy_score': 4, 'player_score': 5}}
@@ -80,13 +80,13 @@ def run_probe_on_stdim(args):
     
 def parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--game', default='Pong-v0', 
+    parser.add_argument('--game', default='Breakout-v0', 
         help='atari game to use')
     parser.add_argument('--supervised', default=False,
         help='flag for fully supervised learning')
     parser.add_argument('--encoder', default='rand_cnn', 
         help='flag for the encoder method. possible options: rand_cnn, ...')
-    parser.add_argument('--collection_steps', default=50000, 
+    parser.add_argument('--collection_steps', default=70000, 
         help='number of steps to collect episodes for')
     parser.add_argument('--agent_collect_mode', default='random_agent', 
         help='collection agent type')
