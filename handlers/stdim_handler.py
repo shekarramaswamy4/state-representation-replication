@@ -21,8 +21,8 @@ class StDimHandler:
         self.encoder = RandCNN()
         # TODO: using the bilinear layers doesn't allow for a batch size change
         # TODO: the 64 here is set as the default batch size, but this might change, probably why they used a matmul instead 
-        self.bilinear_gl = nn.Bilinear(256, 128, 64)
-        self.bilinear_ll = nn.Bilinear(128, 128, 64)
+        self.bilinear_gl = nn.Bilinear(256, 128, 64).to("cuda")
+        self.bilinear_ll = nn.Bilinear(128, 128, 64).to("cuda")
         self.encoder.train(), self.bilinear_gl.train(), self.bilinear_ll.train()
         self.optimizer = torch.optim.Adam(list(self.encoder.parameters()) +
                                         list(self.bilinear_gl.parameters()) +
@@ -64,13 +64,13 @@ class StDimHandler:
                 # if it was the first frame in the episode, take the frame after
                 if idx_within_ep == 0:
                     # frame_batches[-1].append(torch.stack((episodes[ep_idx][idx_within_ep] / 255.0, episodes[ep_idx][idx_within_ep + 1] / 255.0)))
-                    cur_frame_batch.append(torch.stack((episodes[ep_idx][idx_within_ep] / 255.0, episodes[ep_idx][idx_within_ep + 1] / 255.0)))
+                    cur_frame_batch.append(torch.stack((episodes[ep_idx][idx_within_ep] / 255.0, episodes[ep_idx][idx_within_ep + 1] / 255.0)).to("cuda"))
                 else:
                     # frame_batches[-1].append(torch.stack((episodes[ep_idx][idx_within_ep - 1] / 255.0, episodes[ep_idx][idx_within_ep] / 255.0)))
-                    cur_frame_batch.append(torch.stack((episodes[ep_idx][idx_within_ep - 1] / 255.0, episodes[ep_idx][idx_within_ep] / 255.0)))
+                    cur_frame_batch.append(torch.stack((episodes[ep_idx][idx_within_ep - 1] / 255.0, episodes[ep_idx][idx_within_ep] / 255.0)).to("cuda"))
             # make into a tensor
             # frame_batches[-1] = torch.stack(frame_batches[-1])
-            yield torch.stack(cur_frame_batch)
+            yield torch.stack(cur_frame_batch).to("cuda")
         # return frame_batches
 
     def determine_index_of_example(self, episode_lengths, index):
@@ -152,6 +152,7 @@ class StDimHandler:
         print(avg_val_gl_loss)
         print("Average validation local-local losses:")
         print(avg_val_ll_loss)
+        
     def train_epoch(self, frame_batches, train_mode = True):
         '''
         Runs training for one epoch.
@@ -193,10 +194,10 @@ class StDimHandler:
                         g_mn = self.bilinear_gl(first_frames_global, second_frames_local[:, h, w, :])
                         numerator = torch.exp(g_mn.diag())
                         denom = torch.sum(torch.exp(g_mn),1)
-                        loss_for_patch = torch.mean(-torch.log(torch.div(numerator, denom)))
+                        loss_for_patch = torch.mean(-torch.log(torch.div(numerator, denom))).to("cuda")
                     
                     global_local_loss += loss_for_patch
-            global_local_loss /= second_height_range * second_width_range
+            global_local_loss /= (second_height_range * second_width_range)
             
             # local-local loss
             # TODO: this is redundant computation for the encoder
@@ -215,11 +216,10 @@ class StDimHandler:
                         f_mn = self.bilinear_ll(first_frames_local[:, h, w, :], second_frames_local[:, h, w, :])
                         numerator = torch.exp(f_mn.diag())
                         denom = torch.sum(torch.exp(f_mn),1)
-                        loss_for_patch = torch.mean(-torch.log(torch.div(numerator, denom)))
-                        loss_for_patch = F.cross_entropy(f_mn, torch.arange(batch_size))
+                        loss_for_patch = torch.mean(-torch.log(torch.div(numerator, denom))).to("cuda")
                     
                     local_local_loss += loss_for_patch
-            local_local_loss /= second_height_range * second_width_range
+            local_local_loss /= (second_height_range * second_width_range)
             
             if batch_index % 5 == 0:
                 print(f"batch {batch_index+1}")
