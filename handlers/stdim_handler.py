@@ -17,7 +17,7 @@ class StDimHandler:
     Trains an encoder based on the InfoNCE ST-DIM method.
     '''
 
-    def __init__(self):
+    def __init__(self, run_id=''):
         self.encoder = RandCNN()
         # TODO: using the bilinear layers doesn't allow for a batch size change
         # TODO: the 64 here is set as the default batch size, but this might change, probably why they used a matmul instead 
@@ -28,6 +28,7 @@ class StDimHandler:
                                         list(self.bilinear_gl.parameters()) +
                                         list(self.bilinear_ll.parameters()),
                                         lr=3e-4, eps=1e-5)
+        self.run_id = run_id
         
         if old_implementation:
             self.linear_gl = nn.Linear(256, 128)  # x1 = global, x2=patch, n_channels = 32
@@ -96,9 +97,9 @@ class StDimHandler:
         
         print("loading saved models")
         if old_implementation:
-            self.encoder.load_state_dict(torch.load("encoders/STDIM-RandCNN"))
-            self.linear_gl.load_state_dict(torch.load("encoders/STDIM-linear_gl"))
-            self.linear_ll.load_state_dict(torch.load("encoders/STDIM-linear_ll"))
+            self.encoder.load_state_dict(torch.load(  f"encoders/{self.run_id}STDIM-RandCNN"))
+            self.linear_gl.load_state_dict(torch.load(f"encoders/{self.run_id}STDIM-linear_gl"))
+            self.linear_ll.load_state_dict(torch.load(f"encoders/{self.run_id}STDIM-linear_ll"))
 
         avg_train_gl_loss = []
         avg_train_ll_loss = []
@@ -139,9 +140,9 @@ class StDimHandler:
 
             # save encoder
             print("Saving ST-DIM trained encoder...")
-            torch.save(self.encoder.state_dict(), "encoders/STDIM-RandCNN")
-            torch.save(self.linear_gl.state_dict(), "encoders/STDIM-linear_gl")
-            torch.save(self.linear_ll.state_dict(), "encoders/STDIM-linear_ll")
+            torch.save(self.encoder.state_dict(),   f"encoders/{self.run_id}/STDIM-RandCNN")
+            torch.save(self.linear_gl.state_dict(), f"encoders/{self.run_id}/STDIM-linear_gl")
+            torch.save(self.linear_ll.state_dict(), f"encoders/{self.run_id}/STDIM-linear_ll")
             
         print("Average train global-local losses:")
         print(avg_train_gl_loss)

@@ -39,7 +39,7 @@ def train_stdim(args, gen_new_data = False):
         # test_episodes = pickle.load(open(f"{data_dir}/test_episodes.test", "rb"))
         # test_labels = pickle.load(    open(f"{data_dir}/test_labels.test", "rb"))
 
-    handler = StDimHandler()
+    handler = StDimHandler(args.run_id)
     handler.train(tr_episodes, tr_labels, val_episodes=val_episodes, val_labels=val_labels)
     
 def run_probe_on_stdim(args):
