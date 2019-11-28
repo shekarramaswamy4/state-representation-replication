@@ -115,6 +115,8 @@ class ProbeHandler():
         accuracy_per_state_variable = np.zeros(self.num_state_variables)
 
         for ep in range(len(tr_episodes_batched)): # training for each batch
+            if ep % 100 == 0:
+                print(f"episode {ep}")
             gt_labels = tr_labels_batched[ep]
             cur_episodes = tr_episodes_batched[ep]
             # TODO: this depends on dictionary preserving game state variable order

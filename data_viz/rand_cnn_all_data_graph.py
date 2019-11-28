@@ -5,9 +5,12 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # data config
+FILE_PREFIX = "pong-stdim-10k"
+PLOT_TITLE = f"F1 Scores for Pong using ST-DIM ({FILE_PREFIX})"
+INDEX_OF_KEYWORD = 2
 DATA_FOLDER = os.path.join(os.path.dirname(
     os.path.abspath(__file__)), "..", "runs")
-CSV_FILES = glob.glob(os.path.join(DATA_FOLDER, "*.csv"))
+CSV_FILES = glob.glob(os.path.join(DATA_FOLDER, f"{FILE_PREFIX}*.csv"))
 GAME = 'Pong-v0'
 
 # set game label information
@@ -30,7 +33,7 @@ fig, ax = plt.subplots(len(CSV_FILES))
 
 for (file_index, file_path) in enumerate(CSV_FILES):
     file_name = os.path.basename(file_path)
-    y_label = shortcut_to_y_label[file_name.split("_")[1]]
+    y_label = shortcut_to_y_label[file_name.split("_")[INDEX_OF_KEYWORD]]
 
     print(f"Processing \"{file_name}\"")
     pd_frame = pd.read_csv(file_path, header=None, names=headers)

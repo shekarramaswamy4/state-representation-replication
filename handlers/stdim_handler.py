@@ -1,6 +1,7 @@
 import torch
 import torchvision
 import numpy as np
+import gc
 
 import torch.nn as nn
 import torch.nn.functional as F
@@ -81,44 +82,74 @@ class StDimHandler:
         Trains the encoder based on the global-local and local-local objectives.
         '''
         print('--- Training ---')
+        
+        print("loading saved models")
+        self.encoder.load_state_dict(torch.load("encoders/STDIM-RandCNN"))
+        self.linear_gl.load_state_dict(torch.load("encoders/STDIM-linear_gl"))
+        self.linear_ll.load_state_dict(torch.load("encoders/STDIM-linear_ll"))
 
-        train_loss_arr = []
-        train_acc_arr = []
+        avg_train_gl_loss = []
+        avg_train_ll_loss = []
 
-        val_loss_arr = []
-        val_acc_arr = []
-        val_f1_arr = []
+        avg_val_gl_loss = []
+        avg_val_ll_loss = []
 
         for i in range(epochs):
             print('Epoch: ' + str(i + 1) + ' of ' + str(epochs))
             
-            frame_batches = self.generate_batches(train_episodes, batch_size)
+            train_frame_batches = self.generate_batches(train_episodes, batch_size)
+            avg_gl_loss, avg_ll_loss = self.train_epoch(train_frame_batches)
+            del train_frame_batches
+            gc.collect()
             
-            self.train_epoch(frame_batches)
+            print(f"avg_train_gl_loss: {avg_gl_loss}")
+            print(f"avg_train_ll_loss: {avg_ll_loss}")
             
-            # metrics = self.train_epoch(frame_batches)
-            # train_loss_arr.append(metrics[0])
-            # train_acc_arr.append(metrics[1])
+            avg_train_gl_loss.append(avg_gl_loss)
+            avg_train_ll_loss.append(avg_ll_loss)
 
-            # if val_episodes is not None and val_labels is not None:
-            #     print()
-            #     print('Validation: ' + str(i + 1) + ' of ' + str(epochs))
-            #     metrics = self.run_probes(val_episodes, val_labels, batch_size)
-            #     self.print_metrics(metrics)
-            #     val_loss_arr.append(metrics[0])
-            #     val_acc_arr.append(metrics[1])
-            #     val_f1_arr.append(metrics[2])
-            #     print()
-            #     print()
+            if val_episodes is not None and val_labels is not None:
+                print()
+                print('Validation: ' + str(i + 1) + ' of ' + str(epochs))
+                
+                validation_frame_batches = self.generate_batches(val_episodes, batch_size)
+                
+                avg_gl_loss, avg_ll_loss = self.train_epoch(validation_frame_batches, train_mode=False)
+                
+                print(f"avg_val_gl_loss: {avg_gl_loss}")
+                print(f"avg_val_ll_loss: {avg_ll_loss}")
+                
+                avg_val_gl_loss.append(avg_gl_loss)
+                avg_val_ll_loss.append(avg_ll_loss)
+                
+                del validation_frame_batches
+                gc.collect()
 
-    def train_epoch(self, frame_batches):
+            # save encoder
+            print("Saving ST-DIM trained encoder...")
+            torch.save(self.encoder.state_dict(), "encoders/STDIM-RandCNN")
+            torch.save(self.linear_gl.state_dict(), "encoders/STDIM-linear_gl")
+            torch.save(self.linear_ll.state_dict(), "encoders/STDIM-linear_ll")
+            
+        print("Average train global-local losses:")
+        print(avg_train_gl_loss)
+        print("Average train local-local losses:")
+        print(avg_train_ll_loss)
+        print("Average validation global-local losses:")
+        print(avg_val_gl_loss)
+        print("Average validation local-local losses:")
+        print(avg_val_ll_loss)
+    def train_epoch(self, frame_batches, train_mode = True):
         '''
         Runs training for one epoch.
         :param frame_batches: list of batches of paired frames, dimensions: num_batches x batch_size x 2 x (1, 210, 160)
+        :return: average global-local loss for this epoch, average local-local loss for this epoch
         '''
+        epoch_gl_avg_loss = 0
+        epoch_ll_avg_loss = 0
+        
         # training for each batch
-        i = 0
-        for frame_batch in frame_batches:
+        for batch_index, frame_batch in enumerate(frame_batches):
             # frame_batch dimensions: batch_size x 2 x (1, 210, 160)
             global_local_loss = 0
             local_local_loss = 0
@@ -147,7 +178,6 @@ class StDimHandler:
                     
                     global_local_loss += loss_for_patch
             global_local_loss /= second_height_range * second_width_range
-            print("global_local")
             
             # local-local loss
             # TODO: this is redundant computation for the encoder
@@ -164,16 +194,20 @@ class StDimHandler:
                     
                     local_local_loss += loss_for_patch
             local_local_loss /= second_height_range * second_width_range
-            print("local_local")
             
-            if i % 10 == 0:
-                print(f"batch {i+1}")
+            if batch_index % 10 == 0:
+                print(f"batch {batch_index+1}")
                 print(f"\tglobal_local_loss: {global_local_loss}")
                 print(f"\tlocal_local_loss: {local_local_loss}")
-            i+=1
+            batch_index += 1
                 
-            total_loss = global_local_loss + local_local_loss
-            self.optimizer.zero_grad()
-            total_loss.backward()
-            self.optimizer.step()
-            print("optimizer done")
+            epoch_gl_avg_loss += global_local_loss.detach().item()
+            epoch_ll_avg_loss += local_local_loss.detach().item()
+            
+            if train_mode:
+                total_loss = global_local_loss + local_local_loss
+                self.optimizer.zero_grad()
+                total_loss.backward()
+                self.optimizer.step()
+        
+        return epoch_gl_avg_loss / len(frame_batches), epoch_ll_avg_loss / len(frame_batches)
