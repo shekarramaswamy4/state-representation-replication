@@ -10,6 +10,8 @@ from encoders.rand_cnn import RandCNN
 
 import matplotlib.pyplot as plt
 
+old_implementation = False
+
 class StDimHandler:
     '''
     Trains an encoder based on the InfoNCE ST-DIM method.
@@ -19,18 +21,23 @@ class StDimHandler:
         self.encoder = RandCNN()
         # TODO: using the bilinear layers doesn't allow for a batch size change
         # TODO: the 64 here is set as the default batch size, but this might change, probably why they used a matmul instead 
-        # self.bilinear_gl = nn.Bilinear(256, 128, 64)
-        # self.bilinear_ll = nn.Bilinear(128, 128, 64)
-        
-        self.linear_gl = nn.Linear(256, 128)  # x1 = global, x2=patch, n_channels = 32
-        self.linear_ll = nn.Linear(128, 128)
-        # TODO: puts these into "train" mode, unclear what effect this has but the authors did it
-        self.encoder.train(), self.linear_gl.train(), self.linear_ll.train()
-        
+        self.bilinear_gl = nn.Bilinear(256, 128, 64)
+        self.bilinear_ll = nn.Bilinear(128, 128, 64)
+        self.encoder.train(), self.bilinear_gl.train(), self.bilinear_ll.train()
         self.optimizer = torch.optim.Adam(list(self.encoder.parameters()) +
-                                        list(self.linear_gl.parameters()) +
-                                        list(self.linear_ll.parameters()),
+                                        list(self.bilinear_gl.parameters()) +
+                                        list(self.bilinear_ll.parameters()),
                                         lr=3e-4, eps=1e-5)
+        
+        if old_implementation:
+            self.linear_gl = nn.Linear(256, 128)  # x1 = global, x2=patch, n_channels = 32
+            self.linear_ll = nn.Linear(128, 128)
+            # TODO: puts these into "train" mode, unclear what effect this has but the authors did it
+            self.encoder.train(), self.linear_gl.train(), self.linear_ll.train()
+            self.optimizer = torch.optim.Adam(list(self.encoder.parameters()) +
+                                            list(self.linear_gl.parameters()) +
+                                            list(self.linear_ll.parameters()),
+                                            lr=3e-4, eps=1e-5)
 
     def generate_batches(self, episodes, batch_size):
         '''
@@ -45,21 +52,25 @@ class StDimHandler:
             episode_lengths.append(len(ep))
         frames_count = sum(episode_lengths)
 
-        frame_batches = []
+        # frame_batches = []
         frame_idx_batches = BatchSampler(RandomSampler(range(frames_count), replacement=False), batch_size, drop_last=True)
         
         for frame_idx_batch in frame_idx_batches:
-            frame_batches.append([])
+            # frame_batches.append([])
+            cur_frame_batch = []
             for frame_idx in frame_idx_batch:
                 ep_idx, idx_within_ep = self.determine_index_of_example(episode_lengths, frame_idx)
                 # if it was the first frame in the episode, take the frame after
                 if idx_within_ep == 0:
-                    frame_batches[-1].append(torch.stack((episodes[ep_idx][idx_within_ep] / 255.0, episodes[ep_idx][idx_within_ep + 1] / 255.0)))
+                    # frame_batches[-1].append(torch.stack((episodes[ep_idx][idx_within_ep] / 255.0, episodes[ep_idx][idx_within_ep + 1] / 255.0)))
+                    cur_frame_batch.append(torch.stack((episodes[ep_idx][idx_within_ep] / 255.0, episodes[ep_idx][idx_within_ep + 1] / 255.0)))
                 else:
-                    frame_batches[-1].append(torch.stack((episodes[ep_idx][idx_within_ep - 1] / 255.0, episodes[ep_idx][idx_within_ep] / 255.0)))
+                    # frame_batches[-1].append(torch.stack((episodes[ep_idx][idx_within_ep - 1] / 255.0, episodes[ep_idx][idx_within_ep] / 255.0)))
+                    cur_frame_batch.append(torch.stack((episodes[ep_idx][idx_within_ep - 1] / 255.0, episodes[ep_idx][idx_within_ep] / 255.0)))
             # make into a tensor
-            frame_batches[-1] = torch.stack(frame_batches[-1])
-        return frame_batches
+            # frame_batches[-1] = torch.stack(frame_batches[-1])
+            yield torch.stack(cur_frame_batch)
+        # return frame_batches
 
     def determine_index_of_example(self, episode_lengths, index):
         '''
@@ -84,9 +95,10 @@ class StDimHandler:
         print('--- Training ---')
         
         print("loading saved models")
-        self.encoder.load_state_dict(torch.load("encoders/STDIM-RandCNN"))
-        self.linear_gl.load_state_dict(torch.load("encoders/STDIM-linear_gl"))
-        self.linear_ll.load_state_dict(torch.load("encoders/STDIM-linear_ll"))
+        if old_implementation:
+            self.encoder.load_state_dict(torch.load("encoders/STDIM-RandCNN"))
+            self.linear_gl.load_state_dict(torch.load("encoders/STDIM-linear_gl"))
+            self.linear_ll.load_state_dict(torch.load("encoders/STDIM-linear_ll"))
 
         avg_train_gl_loss = []
         avg_train_ll_loss = []
@@ -172,9 +184,15 @@ class StDimHandler:
             batch_size = frame_batch.shape[0]
             for h in range(second_height_range):
                 for w in range(second_width_range):
-                    global_times_W = self.linear_gl(first_frames_global)
-                    g_mn = torch.matmul(global_times_W, second_frames_local[:, h, w, :].t())
-                    loss_for_patch = F.cross_entropy(g_mn, torch.arange(batch_size))
+                    if old_implementation:
+                        global_times_W = self.linear_gl(first_frames_global)
+                        g_mn = torch.matmul(global_times_W, second_frames_local[:, h, w, :].t())
+                        loss_for_patch = F.cross_entropy(g_mn, torch.arange(batch_size))
+                    else:
+                        g_mn = self.bilinear_gl(first_frames_global, second_frames_local[:, h, w, :])
+                        numerator = torch.exp(g_mn.diag())
+                        denom = torch.sum(torch.exp(g_mn),1)
+                        loss_for_patch = torch.mean(-torch.log(torch.div(numerator, denom)))
                     
                     global_local_loss += loss_for_patch
             global_local_loss /= second_height_range * second_width_range
@@ -187,15 +205,22 @@ class StDimHandler:
             batch_size = frame_batch.shape[0]
             for h in range(second_height_range):
                 for w in range(second_width_range):
-                    first_local_times_W = self.linear_ll(first_frames_local[:, h, w, :])
-                    f_mn = torch.matmul(first_local_times_W, second_frames_local[:, h, w, :].t())
-                    # TODO: this cross entropy loss highly optimized 
-                    loss_for_patch = F.cross_entropy(f_mn, torch.arange(batch_size))
+                    if old_implementation:
+                        first_local_times_W = self.linear_ll(first_frames_local[:, h, w, :])
+                        f_mn = torch.matmul(first_local_times_W, second_frames_local[:, h, w, :].t())
+                        # TODO: this cross entropy loss highly optimized 
+                        loss_for_patch = F.cross_entropy(f_mn, torch.arange(batch_size))
+                    else:
+                        f_mn = self.bilinear_ll(first_frames_local[:, h, w, :], second_frames_local[:, h, w, :])
+                        numerator = torch.exp(f_mn.diag())
+                        denom = torch.sum(torch.exp(f_mn),1)
+                        loss_for_patch = torch.mean(-torch.log(torch.div(numerator, denom)))
+                        loss_for_patch = F.cross_entropy(f_mn, torch.arange(batch_size))
                     
                     local_local_loss += loss_for_patch
             local_local_loss /= second_height_range * second_width_range
             
-            if batch_index % 10 == 0:
+            if batch_index % 5 == 0:
                 print(f"batch {batch_index+1}")
                 print(f"\tglobal_local_loss: {global_local_loss}")
                 print(f"\tlocal_local_loss: {local_local_loss}")
