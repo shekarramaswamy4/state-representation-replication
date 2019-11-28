@@ -191,12 +191,7 @@ class StDimHandler:
                     # else:
                     global_times_W = self.linear_gl(first_frames_global)
                     g_mn = torch.matmul(global_times_W, second_frames_local[:, h, w, :].t())
-                    g_mn_exp = torch.exp(g_mn)
-                    numerator = g_mn_exp.diag()
-                    # sum along the rows of g_mn because it is the same global frame you're interested in
-                    denom = torch.sum(g_mn_exp,1)
-                    
-                    loss_for_patch = torch.mean(-torch.log(torch.div(numerator, denom)))
+                    loss_for_patch = torch.mean(-torch.log(F.softmax(g_mn,dim=1).diag()))
                     # print(loss_for_patch)
                     # print(F.cross_entropy(g_mn, torch.arange(batch_size)))
                     # print()
@@ -227,11 +222,7 @@ class StDimHandler:
                     
                     first_local_times_W = self.linear_ll(first_frames_local[:, h, w, :])
                     f_mn = torch.matmul(first_local_times_W, second_frames_local[:, h, w, :].t())
-                    f_mn_exp = torch.exp(f_mn)
-                    numerator = f_mn_exp.diag()
-                    # sum along the rows of f_mn because it is the same first local frame you're interested in
-                    denom = torch.sum(f_mn_exp,1)
-                    loss_for_patch = torch.mean(-torch.log(torch.div(numerator, denom)))
+                    loss_for_patch = torch.mean(-torch.log(F.softmax(f_mn,dim=1).diag()))
                     # print(loss_for_patch)
                     # print(F.cross_entropy(f_mn, torch.arange(batch_size)))
                     # print()
