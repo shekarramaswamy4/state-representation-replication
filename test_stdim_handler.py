@@ -40,14 +40,14 @@ def train_stdim(args, gen_new_data = False):
         # test_labels = pickle.load(    open(f"{data_dir}/test_labels.test", "rb"))
 
     handler = StDimHandler()
-    handler.train(tr_episodes, tr_labels, val_episodes=val_episodes, val_labels=val_labels)
+    handler.train(tr_episodes[:1000], tr_labels[:1000])#, val_episodes=val_episodes, val_labels=val_labels)
     
 def run_probe_on_stdim(args):
     game_mappings = {'Pong-v0': {'player_y': 0, 'enemy_y': 1, 'ball_x': 2, 'ball_y': 3, 'enemy_score': 4, 'player_score': 5}}
     collection_lengths = {'Pong-v0' : 2}
 
     # encoder setup
-    encoder_path = "encoders/encoder_losses_3.82_50_epochs/STDIM-RandCNN"
+    encoder_path = "encoders/pong_encoder_50k_samples_43_epochs/STDIM-RandCNN"
     print(f"loading ST-DIM encoder parameters from {encoder_path}")
     encoder = RandCNN()
     encoder.load_state_dict(torch.load(f"{encoder_path}"))
