@@ -1,6 +1,7 @@
 import torch
 import torchvision
 import numpy as np
+import os
 import gc
 
 import torch.nn as nn
@@ -137,6 +138,7 @@ class StDimHandler:
 
             # save encoder
             print("Saving ST-DIM trained encoder...")
+            os.makedirs(f"encoders/{self.run_id}", exist_ok=True)
             torch.save(self.encoder.state_dict(),   f"encoders/{self.run_id}/STDIM-RandCNN")
             torch.save(self.linear_gl.state_dict(), f"encoders/{self.run_id}/STDIM-linear_gl")
             torch.save(self.linear_ll.state_dict(), f"encoders/{self.run_id}/STDIM-linear_ll")
