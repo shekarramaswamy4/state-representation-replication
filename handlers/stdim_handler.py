@@ -21,8 +21,8 @@ class StDimHandler:
         self.encoder = RandCNN()
         # TODO: using the bilinear layers doesn't allow for a batch size change
         # TODO: the 64 here is set as the default batch size, but this might change, probably why they used a matmul instead 
-        self.bilinear_gl = nn.Bilinear(256, 128, 64).to("cuda")
-        self.bilinear_ll = nn.Bilinear(128, 128, 64).to("cuda")
+        self.bilinear_gl = nn.Bilinear(256, 128, 64)
+        self.bilinear_ll = nn.Bilinear(128, 128, 64)
         self.encoder.train(), self.bilinear_gl.train(), self.bilinear_ll.train()
         self.optimizer = torch.optim.Adam(list(self.encoder.parameters()) +
                                         list(self.bilinear_gl.parameters()) +
@@ -64,13 +64,13 @@ class StDimHandler:
                 # if it was the first frame in the episode, take the frame after
                 if idx_within_ep == 0:
                     # frame_batches[-1].append(torch.stack((episodes[ep_idx][idx_within_ep] / 255.0, episodes[ep_idx][idx_within_ep + 1] / 255.0)))
-                    cur_frame_batch.append(torch.stack((episodes[ep_idx][idx_within_ep] / 255.0, episodes[ep_idx][idx_within_ep + 1] / 255.0)).to("cuda"))
+                    cur_frame_batch.append(torch.stack((episodes[ep_idx][idx_within_ep] / 255.0, episodes[ep_idx][idx_within_ep + 1] / 255.0)))
                 else:
                     # frame_batches[-1].append(torch.stack((episodes[ep_idx][idx_within_ep - 1] / 255.0, episodes[ep_idx][idx_within_ep] / 255.0)))
-                    cur_frame_batch.append(torch.stack((episodes[ep_idx][idx_within_ep - 1] / 255.0, episodes[ep_idx][idx_within_ep] / 255.0)).to("cuda"))
+                    cur_frame_batch.append(torch.stack((episodes[ep_idx][idx_within_ep - 1] / 255.0, episodes[ep_idx][idx_within_ep] / 255.0)))
             # make into a tensor
             # frame_batches[-1] = torch.stack(frame_batches[-1])
-            yield torch.stack(cur_frame_batch).to("cuda")
+            yield torch.stack(cur_frame_batch)
         # return frame_batches
 
     def determine_index_of_example(self, episode_lengths, index):
@@ -162,6 +162,7 @@ class StDimHandler:
         epoch_gl_avg_loss = 0
         epoch_ll_avg_loss = 0
         
+        num_batches_processed = 0
         # training for each batch
         for batch_index, frame_batch in enumerate(frame_batches):
             # frame_batch dimensions: batch_size x 2 x (1, 210, 160)
@@ -194,7 +195,7 @@ class StDimHandler:
                         g_mn = self.bilinear_gl(first_frames_global, second_frames_local[:, h, w, :])
                         numerator = torch.exp(g_mn.diag())
                         denom = torch.sum(torch.exp(g_mn),1)
-                        loss_for_patch = torch.mean(-torch.log(torch.div(numerator, denom))).to("cuda")
+                        loss_for_patch = torch.mean(-torch.log(torch.div(numerator, denom)))
                     
                     global_local_loss += loss_for_patch
             global_local_loss /= (second_height_range * second_width_range)
@@ -216,7 +217,7 @@ class StDimHandler:
                         f_mn = self.bilinear_ll(first_frames_local[:, h, w, :], second_frames_local[:, h, w, :])
                         numerator = torch.exp(f_mn.diag())
                         denom = torch.sum(torch.exp(f_mn),1)
-                        loss_for_patch = torch.mean(-torch.log(torch.div(numerator, denom))).to("cuda")
+                        loss_for_patch = torch.mean(-torch.log(torch.div(numerator, denom)))
                     
                     local_local_loss += loss_for_patch
             local_local_loss /= (second_height_range * second_width_range)
@@ -225,7 +226,6 @@ class StDimHandler:
                 print(f"batch {batch_index+1}")
                 print(f"\tglobal_local_loss: {global_local_loss}")
                 print(f"\tlocal_local_loss: {local_local_loss}")
-            batch_index += 1
                 
             epoch_gl_avg_loss += global_local_loss.detach().item()
             epoch_ll_avg_loss += local_local_loss.detach().item()
@@ -235,5 +235,7 @@ class StDimHandler:
                 self.optimizer.zero_grad()
                 total_loss.backward()
                 self.optimizer.step()
+            
+            num_batches_processed += 1
         
-        return epoch_gl_avg_loss / len(frame_batches), epoch_ll_avg_loss / len(frame_batches)
+        return epoch_gl_avg_loss / num_batches_processed, epoch_ll_avg_loss / num_batches_processed
