@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 # data config
 
-FILE_PREFIX = "pong-sup"
+FILE_PREFIX = "pong-stdim-50k-samples-43-epochs"
 PLOT_TITLE = f"F1 Scores for Pong ({FILE_PREFIX})"
 INDEX_OF_KEYWORD = 2
 DATA_FOLDER = os.path.join(os.path.dirname(
@@ -73,7 +73,7 @@ for (file_index, file_path) in enumerate(files_to_plot):
             ax[subplot_index].set_title(
                 f"{cur_title[:-3]}", fontweight="bold", fontsize="x-large")
             cur_title = ""
-            ax[subplot_index].set_ylim([0.0, 1.0])
+            ax[subplot_index].set_ylim([0.0, 1.01])
 
 plt.subplots_adjust(bottom=0.05, hspace=0.5)
 # full screen
