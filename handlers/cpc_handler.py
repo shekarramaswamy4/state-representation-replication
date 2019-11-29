@@ -4,17 +4,31 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 from torch.utils.data import RandomSampler, BatchSampler
-from .utils import calculate_accuracy
+# from .utils import calculate_accuracy
+
+from encoders.rand_cnn import RandCNN
 
 # taken directly from atari-representation-learning/methods/cpc.py
-# so far I've taken out wandb and early stopping, did not remove calculate_accuracy yet
-class CpcHandler():
+# so far I've taken out wandb, early stopping, calculate_accuracy
+# i think i handled the class variables in the init method
+
+# We need to:
+#   set a hidden size to our encoder (in this case, RandCNN).
+class CPCHandler():
     # TODO: Make it work for all modes, right now only it defaults to pcl.
-    def __init__(self, encoder, config):
-        self.encoder = encoder
-        self.config = config
-        for k, v in config.items():
-            setattr(self, k, v)
+    def __init__(self, input_shape):
+        self.encoder = RandCNN()
+        self.input_shape = input_shape
+
+        # this was taken directly from the defaults of utils.py of the original code
+        # this should eventually be moved to the arg defaults in pipeline.py
+        self.steps_start = 0
+        self.steps_end = 99
+        self.steps_step = 4
+        self.gru_size = 256
+        self.gru_layers = 2
+        self.batch_size = 64
+        self.sequence_length = 100
 
         self.steps_gen = lambda: range(self.steps_start, self.steps_end, self.steps_step)
         self.discriminators = {i: nn.Linear(self.gru_size, self.encoder.hidden_size).to(device) for i in self.steps_gen()}
@@ -23,7 +37,7 @@ class CpcHandler():
         params = list(self.encoder.parameters()) + list(self.gru.parameters())
         for disc in self.discriminators.values():
           params += disc.parameters()
-        self.optimizer = torch.optim.Adam(params, lr=config['lr'])
+        self.optimizer = torch.optim.Adam(params, 3e-4)
 
     def generate_batch(self, episodes):
         episodes = [episode for episode in episodes if len(episode) >= self.sequence_length]
@@ -52,7 +66,7 @@ class CpcHandler():
             with torch.set_grad_enabled(mode == 'train'):
                 sequence = sequence.to(self.device)
                 sequence = sequence / 255.
-                channels, w, h = self.config['obs_space'][-3:]
+                channels, w, h = self.input_shape[-3:]
                 flat_sequence = sequence.view(-1, channels, w, h)
                 flat_latents = self.encoder(flat_sequence)
                 latents = flat_latents.view(

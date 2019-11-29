@@ -15,9 +15,11 @@ https://github.com/mila-iqia/atari-representation-learning
             (base CNN architecture used in Random-CNN and ST-DIM)
     ├── handlers
         ├── probe_handler.py
-            (trains the probe (supervised and unsupervised))
+            (trains the probe (supervised and unsupervised flags specified by pipeline.py))
         └── stdim_handler.py
             (trains the encoder and bilinear layers using ST-DIM (InfoNCE ST-DIM, no ablations))
+        └── cpc_handler.py
+
     ├── probe
         └── probe.py
             (regular probe and fully supervised probe (linear layer and linear layer + encoder respectively))

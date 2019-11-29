@@ -3,6 +3,8 @@ import gym
 import time
 
 from handlers.probe_handler import ProbeHandler
+from handlers.cpc_handler import CPCHandler
+
 from encoders.rand_cnn import RandCNN 
 
 from data_representation.get_data import get_random_episodes
@@ -18,11 +20,17 @@ def full_pipeline(args):
 	test_episodes, test_labels = get_random_episodes(env_name=args.game, 
 										steps=args.collection_steps, 
 										min_episode_length=collection_lengths[args.game])
+	
 
 	# encoder setup
 	encoder = None
 	if args.encoder == 'rand_cnn':
 		encoder = RandCNN()
+	elif args.encoder == 'cpc':
+		input_shape = tr_episodes[0][0].shape
+		encoder = CPCHandler(input_shape)
+	elif args.encoder == 'stdim':
+		print('implement stdim encoder in pipeline.py')
 	
 	assert encoder is not None
 
@@ -41,7 +49,7 @@ def parser():
 		help='flag for fully supervised learning')
 	parser.add_argument('--encoder', default='rand_cnn', 
 		help='flag for the encoder method. possible options: rand_cnn, ...')
-	parser.add_argument('--collection_steps', default=50000, 
+	parser.add_argument('--collection_steps', default=5000, 
 		help='number of steps to collect episodes for')
 	parser.add_argument('--agent_collect_mode', default='random_agent', 
 		help='collection agent type')
