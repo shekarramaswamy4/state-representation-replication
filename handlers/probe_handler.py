@@ -125,7 +125,6 @@ class ProbeHandler():
 
                 cur_probe = self.probes[idx]
                 cur_optim = self.optimizers[idx]
-                cur_optim.zero_grad()
 
                 # if fully supervised, FSProbe has the encoder in its init
                 # if not, we use self.encoder for non FS case and make sure to stop gradient
@@ -151,6 +150,8 @@ class ProbeHandler():
                 # this is how authors compute accuracy. it is bad. we should use a different metric, eventually.
                 accuracy_per_state_variable[idx] += calculate_multiclass_accuracy(pred_labels, var_label)
 
+                # backprop
+                cur_optim.zero_grad()
                 loss.backward()
                 cur_optim.step()
     
