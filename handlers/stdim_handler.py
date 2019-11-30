@@ -95,9 +95,9 @@ class StDimHandler:
         
         # TODO: add argparse flag on whether to load old models
         # print("loading saved models")
-        # self.encoder.load_state_dict(torch.load(  f"encoders/{self.run_id}STDIM-RandCNN"))
-        # self.linear_gl.load_state_dict(torch.load(f"encoders/{self.run_id}STDIM-linear_gl"))
-        # self.linear_ll.load_state_dict(torch.load(f"encoders/{self.run_id}STDIM-linear_ll"))
+        self.encoder.load_state_dict(torch.load(  f"encoders/{self.run_id}/STDIM-RandCNN"))
+        self.linear_gl.load_state_dict(torch.load(f"encoders/{self.run_id}/STDIM-linear_gl"))
+        self.linear_ll.load_state_dict(torch.load(f"encoders/{self.run_id}/STDIM-linear_ll"))
 
         avg_train_gl_loss = []
         avg_train_ll_loss = []
