@@ -50,6 +50,7 @@ def run_probe_on_stdim(args):
     print(f"loading ST-DIM encoder parameters from {encoder_path}")
     encoder = RandCNN()
     encoder.load_state_dict(torch.load(f"{encoder_path}"))
+    print("ST-DIM encoder model loaded")
     
     assert encoder is not None
 
@@ -63,8 +64,11 @@ def run_probe_on_stdim(args):
     tr_labels = pickle.load(        open(f"{data_dir}/tr_labels.test", "rb"))
     val_episodes = pickle.load(  open(f"{data_dir}/val_episodes.test", "rb"))
     val_labels = pickle.load(      open(f"{data_dir}/val_labels.test", "rb"))
+    print("train/validation data loaded")
     
+    print("beginning probe training")
     probe_handler.train(tr_episodes, tr_labels, val_episodes=val_episodes, val_labels=val_labels, epochs=int(args.epochs))
+    print("finished probe training")
     
     del tr_episodes
     del tr_labels
@@ -73,8 +77,11 @@ def run_probe_on_stdim(args):
     
     # probe_handler.validate(val_episodes, val_labels)
     
+    print("loading testing data")
     test_episodes = pickle.load(open(f"{data_dir}/test_episodes.test", "rb"))
     test_labels = pickle.load(    open(f"{data_dir}/test_labels.test", "rb"))
+    print("testing data loaded")
+    print("beginning probe testing ")
     probe_handler.test(test_episodes, test_labels)
     
 def parser():
