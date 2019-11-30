@@ -137,6 +137,9 @@ class ProbeHandler():
 
                 var_label = torch.tensor(var_label).long()
 
+                print(pred_labels.shape)
+                print(var_label.shape)
+                print()
                 # loss metric
                 loss = self.loss(pred_labels, var_label)
                 loss_val = loss.item()
