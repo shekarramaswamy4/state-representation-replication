@@ -10,8 +10,9 @@ from encoders.rand_cnn import RandCNN
 from data_representation.get_data import get_random_episodes
 
 # ordering for state variables in dictionary form
-game_mappings = {'Pong-v0': {'player_y': 0, 'enemy_y': 1, 'ball_x': 2, 'ball_y': 3, 'enemy_score': 4, 'player_score': 5}}
-collection_lengths = {'Pong-v0' : 2}
+game_mappings = {'Pong-v0': {'player_y': 0, 'enemy_y': 1, 'ball_x': 2, 'ball_y': 3, 'enemy_score': 4, 'player_score': 5}, 
+				'Breakout': {'ball_x': 0, 'ball_y': 1, 'player_x': 2, 'blocks_hit_count': 3, 'score': 4, 'block_bit_map': 5}}
+collection_lengths = {'Pong-v0' : 2, 'Breakout' : 2}
 
 def full_pipeline(args):
 	# collect data
@@ -49,7 +50,7 @@ def parser():
 		help='flag for fully supervised learning')
 	parser.add_argument('--encoder', default='rand_cnn', 
 		help='flag for the encoder method. possible options: rand_cnn, ...')
-	parser.add_argument('--collection_steps', default=5000, 
+	parser.add_argument('--collection_steps', default=50000, 
 		help='number of steps to collect episodes for')
 	parser.add_argument('--agent_collect_mode', default='random_agent', 
 		help='collection agent type')
