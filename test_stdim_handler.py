@@ -10,7 +10,6 @@ from data_representation.get_data import get_random_episodes
 
 def train_stdim(args, gen_new_data = False):
     # ordering for state variables in dictionary form
-    game_mappings = {'Pong-v0': {'player_y': 0, 'enemy_y': 1, 'ball_x': 2, 'ball_y': 3, 'enemy_score': 4, 'player_score': 5}}
     collection_lengths = {'Pong-v0' : 2, 'Breakout-v0': 2}
 
     data_dir=f"{args.game}-{args.collection_steps}"
@@ -43,11 +42,11 @@ def train_stdim(args, gen_new_data = False):
     handler.train(tr_episodes, tr_labels, val_episodes=val_episodes, val_labels=val_labels)
     
 def run_probe_on_stdim(args):
-    game_mappings = {'Pong-v0': {'player_y': 0, 'enemy_y': 1, 'ball_x': 2, 'ball_y': 3, 'enemy_score': 4, 'player_score': 5}}
-    collection_lengths = {'Pong-v0' : 2}
+    game_mappings = {'Pong-v0': {'player_y': 0, 'enemy_y': 1, 'ball_x': 2, 'ball_y': 3, 'enemy_score': 4, 'player_score': 5}, 'Breakout-v0': {'ball_x': 0, 'ball_y': 1, 'player_x': 2, 'blocks_hit_count': 3, 'score': 4, 'block_bit_map_18': 5}}
+    collection_lengths = {'Pong-v0' : 2, 'Breakout-v0': 2}
 
     # encoder setup
-    encoder_path = "encoders/pong_encoder_50k_samples_43_epochs/STDIM-RandCNN"
+    encoder_path = "encoders/Breakout-70k-steps/STDIM-RandCNN"
     print(f"loading ST-DIM encoder parameters from {encoder_path}")
     encoder = RandCNN()
     encoder.load_state_dict(torch.load(f"{encoder_path}"))
